@@ -9,9 +9,9 @@ app.config['UPLOAD_FOLDER'] = 'uploads'  # create this folder
 # Connect to MySQL
 db = mysql.connector.connect(
     host="localhost",
-    user="spotify_admin",
+    user="recordserver",
     password="$3000JHCpaperPC",
-    database="spotify_record"
+    database="spotifydb"
 )
 
 cursor = db.cursor()
