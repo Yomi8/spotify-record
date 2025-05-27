@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.css'
 
@@ -7,7 +6,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 
 import Home from './pages/Home';
-import List from './pages/ListS';
+import List from './pages/Lists';
 import Search from './pages/Search';
 import Settings from './pages/Settings';
 
