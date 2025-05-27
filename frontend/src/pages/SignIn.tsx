@@ -1,6 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../components/UserContext';
 
+type UserContextType = {
+  const { login } = useUser() as UserContextType;
+  // add other properties if needed
+};
+
 export default function SignIn() {
   const { login } = useUser();
   const navigate = useNavigate();
