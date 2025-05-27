@@ -1,10 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../components/UserContext';
 
-type UserContextType = {
-    login: (token: string) => void;
-    // add other properties if needed
-};
 
 export default function SignIn() {
   const { login } = useUser();

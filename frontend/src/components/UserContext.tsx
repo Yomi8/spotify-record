@@ -1,4 +1,5 @@
-import { createContext, PropsWithChildren, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
+import type { PropsWithChildren } from 'react';
 
 interface UserContextType {
   token: string | null;
