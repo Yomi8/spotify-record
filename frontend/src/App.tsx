@@ -7,14 +7,12 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 
 import Home from './pages/Home';
-import List from './pages/List';
+import List from './pages/ListS';
 import Search from './pages/Search';
 import Settings from './pages/Settings';
 
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <Router>
       <Navbar />
