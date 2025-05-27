@@ -1,12 +1,24 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, PropsWithChildren, useState, useContext, useEffect } from 'react';
 
-const UserContext = createContext();
+interface UserContextType {
+  token: string | null;
+  isLoggedIn: boolean;
+  login: (jwt: string) => void;
+  logout: () => void;
+}
 
-export function UserProvider({ children }) {
+const UserContext = createContext<UserContextType>({
+  token: null,
+  isLoggedIn: false,
+  login: () => {},
+  logout: () => {},
+});
+
+export function UserProvider({ children }: PropsWithChildren<{}>) {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const isLoggedIn = !!token;
 
-  const login = (jwt) => {
+  const login = (jwt: string) => {
     localStorage.setItem('token', jwt);
     setToken(jwt);
   };

@@ -1,4 +1,4 @@
-import { useUser } from '../UserContext';
+import { useUser } from '../components/UserContext';
 
 export default function Profile() {
   const { logout } = useUser();
