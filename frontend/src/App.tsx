@@ -3,6 +3,7 @@ import 'bootstrap/dist/css/bootstrap.css'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Navbar from './components/Navbar';
+import UserSync from './components/UserSync';
 
 import Home from './pages/Home';
 import List from './pages/Lists';
