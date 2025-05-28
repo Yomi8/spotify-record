@@ -14,6 +14,7 @@ function App() {
   return (
     <Router>
       <Navbar />
+      <UserSync />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/list" element={<List />} />
