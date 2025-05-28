@@ -1,22 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
-import type { LogoutOptions } from '@auth0/auth0-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
-const serverIp = '109.123.227.242';
-
 export default function Navbar() {
   const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
-
-  const handleLogout = () => {
-    const options: LogoutOptions = {
-      logoutParams: {
-        returnTo: `http://${serverIp}:3000/`,
-      },
-    };
-    logout(options);
-  };
 
   return (
     <nav className="navbar navbar-dark bg-dark px-3 justify-content-between">
@@ -48,7 +36,7 @@ export default function Navbar() {
               <li><Link className="dropdown-item" to="/profile">Profile</Link></li>
               <li><Link className="dropdown-item" to="/settings">Settings</Link></li>
               <li><hr className="dropdown-divider" /></li>
-              <li><button className="dropdown-item" onClick={handleLogout}>Logout</button></li>
+              <li><button onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>Logout</button></li>
             </>
           ) : (
             <li><button className="dropdown-item" onClick={() => loginWithRedirect()}>Sign In</button></li>
