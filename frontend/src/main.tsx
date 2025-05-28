@@ -10,7 +10,7 @@ const serverIp = '109.123.227.242';
 
 
 createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <StrictMode>
     <Auth0Provider
       domain={domain}
       clientId={clientId}
@@ -20,5 +20,5 @@ createRoot(document.getElementById('root')!).render(
     >
       <App />
     </Auth0Provider>
-  </React.StrictMode>
+  </StrictMode>
 )

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { useAuth0, LogoutOptions } from '@auth0/auth0-react';
+import { useAuth0 } from '@auth0/auth0-react';
+import type { LogoutOptions } from '@auth0/auth0-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
