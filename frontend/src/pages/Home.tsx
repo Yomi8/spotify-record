@@ -1,5 +1,4 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
-import React from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 
 export default function Home() {
@@ -14,7 +13,7 @@ export default function Home() {
         Welcome{' '}
         <span className="text-muted">
           {isAuthenticated
-            ? user.nickname || user.name || user.email
+            ? user?.nickname || user?.name || user?.email || 'User'
             : 'Guest'}
         </span>
         !
