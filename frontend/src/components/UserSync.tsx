@@ -15,7 +15,7 @@
         try {
           // const token = await getAccessTokenSilently(); // Uncomment if using Authorization header
 
-          await fetch("http://localhost:5000/api/users/sync", {
+          await fetch("/api/users/sync", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
