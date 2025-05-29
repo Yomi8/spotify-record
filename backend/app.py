@@ -2,6 +2,11 @@ from flask import Flask, request, jsonify
 import mysql.connector
 import json
 import os
+import logging
+
+logging.basicConfig(filename='error.log', level=logging.DEBUG)
+
+
 
 app = Flask(__name__)
 
