@@ -70,5 +70,38 @@ def sync_user():
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
+@app.route('/api/upload-spotify-json', methods=['POST'])
+def upload_spotify_json():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    
+    if not file.filename.endswith('.json'):
+        return jsonify({"error": "Invalid file extension"}), 400
+
+    try:
+        # Read file content (limit size to prevent DoS)
+        content = file.read(20 * 1024 * 1024)  # max 20MB
+
+        import json
+        data = json.loads(content)
+
+        # Validate expected structure of Spotify JSON here
+        if not isinstance(data, dict):  # example check
+            return jsonify({"error": "Invalid JSON structure"}), 400
+
+        # TODO: Process and save data as needed
+        # e.g., save to DB, or trigger async job
+
+        return jsonify({"status": "success", "message": "File processed"}), 200
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid JSON format"}), 400
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

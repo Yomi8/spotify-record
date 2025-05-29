@@ -8,10 +8,10 @@ export default function Home() {
     <div
       className="container-fluid text-white py-4"
       style={{ minHeight: '100vh', background: 'linear-gradient(to right, #000, #333)' }}
-    >
+    > 
       <h1>
         Welcome{' '}
-        <span className="text-muted">
+        <span>
           {isAuthenticated
             ? user?.nickname || user?.name || user?.email || 'User'
             : 'Guest'}
