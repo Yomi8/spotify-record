@@ -9,8 +9,10 @@ export default function Navbar() {
   return (
     <nav className="navbar navbar-dark bg-dark px-3 justify-content-between">
       <div className="d-flex align-items-center gap-4">
-        <span className="navbar-brand mb-0 h1">Logo</span>
-        <span className="text-white">Record</span>
+        <div>
+          <span className="navbar-brand mb-0 h1">Logo</span>
+          <Link to="/" className="text-white">Record</span>
+        </div>
         <Link to="/list" className="nav-link text-white">Lists</Link>
         <Link to="/search" className="nav-link text-white">
           <i className="bi bi-search"></i> Search

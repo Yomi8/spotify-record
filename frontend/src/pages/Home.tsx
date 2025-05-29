@@ -1,10 +1,25 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
+import React from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 
 export default function Home() {
+  const { user, isAuthenticated } = useAuth0();
+
   return (
-    <div className="container-fluid text-white py-4" style={{ minHeight: '100vh', background: 'linear-gradient(to right, #000, #333)' }}>
-      <h1>Welcome <span className="text-muted">{'{User}'}</span>!</h1>
-      
+    <div
+      className="container-fluid text-white py-4"
+      style={{ minHeight: '100vh', background: 'linear-gradient(to right, #000, #333)' }}
+    >
+      <h1>
+        Welcome{' '}
+        <span className="text-muted">
+          {isAuthenticated
+            ? user.nickname || user.name || user.email
+            : 'Guest'}
+        </span>
+        !
+      </h1>
+
       <div className="row mt-4">
         {/* Left card */}
         <div className="col-md-6">
