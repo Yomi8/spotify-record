@@ -1,4 +1,3 @@
-import React from "react";
 import SpotifyUpload from "../components/JSONUpload";
 
 export default function Settings() {
