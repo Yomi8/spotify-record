@@ -21,7 +21,7 @@ const JSONUpload = () => {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("http://localhost:5000/api/upload-spotify-json", {
+      const res = await fetch("https://yomi16.nz/api/upload-spotify-json", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
