@@ -35,15 +35,30 @@ export default function Home() {
         </div>
 
         {/* Right background image placeholder */}
-        <div className="col-md-6 d-flex align-items-center justify-content-center">
+        <div className="col-md-6 position-relative p-0">
           <img
             src={backgroundImg}
             alt="Abstract Background"
-            className="img-fluid"
-            style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px' }}
+            style={{
+              width: '100%',
+              height: '100vh',
+              objectFit: 'cover',
+              display: 'block',
+            }}
           />
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '40%',    // width of fade area from left side of right column
+              height: '100%',
+              background: 'linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0))',
+              pointerEvents: 'none', // so overlay doesn’t block clicks
+            }}
+          />
+          </div>
         </div>
-      </div>
     </div>
   );
 }
