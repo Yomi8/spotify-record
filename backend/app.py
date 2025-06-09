@@ -1,12 +1,15 @@
 from flask import Flask, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 import mysql.connector
 import json
 import os
 import logging
+from datetime import datetime
+import json, requests
 
 logging.basicConfig(filename='error.log', level=logging.DEBUG)
 
-
+SPOTIFY_TOKEN = "972e38506b164833aea4abe281f96585"
 
 app = Flask(__name__)
 
@@ -75,34 +78,107 @@ def sync_user():
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
+def get_spotify_metadata(uri):
+    track_uri = uri.split(":")[-1]
+    r = requests.get(f"https://api.spotify.com/v1/tracks/{track_uri}", headers={
+        "Authorization": f"Bearer {SPOTIFY_TOKEN}"
+    })
+    if r.status_code == 200:
+        d = r.json()
+        return {
+            "track_name": d["name"],
+            "artist_name": d["artists"][0]["name"],
+            "album_name": d["album"]["name"],
+            "duration_ms": d["duration_ms"],
+            "image_url": d["album"]["images"][0]["url"] if d["album"]["images"] else None
+        }
+    return None
+
+
 @app.route('/api/upload-spotify-json', methods=['POST'])
+@jwt_required()
 def upload_spotify_json():
+    auth0_id = get_jwt_identity()
+
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
-    
-    file = request.files['file']
 
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-    
-    if not file.filename.endswith('.json'):
-        return jsonify({"error": "Invalid file extension"}), 400
+    file = request.files['file']
+    if file.filename == '' or not file.filename.endswith('.json'):
+        return jsonify({"error": "Invalid file"}), 400
 
     try:
-        # Read file content (limit size to prevent DoS)
-        content = file.read(20 * 1024 * 1024)  # max 20MB
-
-        import json
+        content = file.read(20 * 1024 * 1024)
         data = json.loads(content)
 
-        # Validate expected structure of Spotify JSON here
-        if not isinstance(data, dict):  # example check
-            return jsonify({"error": "Invalid JSON structure"}), 400
+        if not isinstance(data, list):
+            return jsonify({"error": "Expected a list of streaming records"}), 400
 
-        # TODO: Process and save data as needed
-        # e.g., save to DB, or trigger async job
+        cursor = db.cursor()
 
-        return jsonify({"status": "success", "message": "File processed"}), 200
+        # Get user_id from auth0_id
+        cursor.execute("SELECT id FROM core_users WHERE auth0_id = %s", (auth0_id,))
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        user_id = user[0]
+
+        inserted = 0
+        for stream in data:
+            ts = stream.get("ts")
+            uri = stream.get("spotify_track_uri")
+            if not ts or not uri:
+                continue
+
+            # Check if stream already exists for user
+            cursor.execute("SELECT id FROM usage_logs WHERE user_id = %s AND ts = %s", (user_id, ts))
+            if cursor.fetchone():
+                continue  # skip duplicates by timestamp
+
+            # Get or insert song
+            cursor.execute("SELECT id FROM core_songs WHERE spotify_uri = %s", (uri,))
+            song = cursor.fetchone()
+            if not song:
+                metadata = get_spotify_metadata(uri)
+                if not metadata:
+                    continue  # skip if Spotify API fails
+
+                cursor.execute("""
+                    INSERT INTO core_songs (spotify_uri, track_name, artist_name, album_name, duration_ms, image_url)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    uri,
+                    metadata["track_name"],
+                    metadata["artist_name"],
+                    metadata["album_name"],
+                    metadata["duration_ms"],
+                    metadata["image_url"]
+                ))
+                song_id = cursor.lastrowid
+            else:
+                song_id = song[0]
+
+            # Insert stream
+            cursor.execute("""
+                INSERT INTO usage_logs (
+                    user_id, song_id, ts, ms_played, platform, conn_country, ip_addr,
+                    spotify_track_uri, episode_name, episode_show_name, reason_start,
+                    reason_end, shuffle, skipped, offline, offline_timestamp, incognito_mode
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                user_id, song_id, datetime.fromisoformat(ts.replace("Z", "+00:00")),
+                stream.get("ms_played"), stream.get("platform"), stream.get("conn_country"),
+                stream.get("ip_addr"), uri, stream.get("episode_name"),
+                stream.get("episode_show_name"), stream.get("reason_start"),
+                stream.get("reason_end"), stream.get("shuffle"), stream.get("skipped"),
+                stream.get("offline"), stream.get("offline_timestamp"), stream.get("incognito_mode")
+            ))
+            inserted += 1
+
+        db.commit()
+        cursor.close()
+        return jsonify({"status": "success", "inserted": inserted}), 200
+
     except json.JSONDecodeError:
         return jsonify({"error": "Invalid JSON format"}), 400
     except Exception as e:
