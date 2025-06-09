@@ -8,6 +8,9 @@ import logging
 from datetime import datetime
 import json, requests
 
+import sys
+print("Python executing Flask app:", sys.executable)
+
 logging.basicConfig(filename='error.log', level=logging.DEBUG)
 
 SPOTIFY_TOKEN = "972e38506b164833aea4abe281f96585"
