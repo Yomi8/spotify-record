@@ -1,5 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useAuth0 } from '@auth0/auth0-react';
+import backgroundImg from '../assets/images/background.jpg';
+
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth0();
@@ -34,10 +36,12 @@ export default function Home() {
 
         {/* Right background image placeholder */}
         <div className="col-md-6 d-flex align-items-center justify-content-center">
-          <div className="text-center text-secondary">
-            <i className="bi bi-image" style={{ fontSize: '4rem' }}></i>
-            <p>{'{Abstract Background}'}</p>
-          </div>
+          <img
+            src={backgroundImg}
+            alt="Abstract Background"
+            className="img-fluid"
+            style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px' }}
+          />
         </div>
       </div>
     </div>
