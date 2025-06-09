@@ -17,6 +17,7 @@ app = Flask(__name__)
 CORS(app, origins=["https://yomi16.nz", "http://127.0.0.1:3000"], supports_credentials=True)
 
 app.config['UPLOAD_FOLDER'] = 'uploads'  # create this folder
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB
 
 # Connect to MySQL
 db = mysql.connector.connect(
