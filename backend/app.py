@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 import mysql.connector
 import json
@@ -10,6 +10,7 @@ import json, requests
 import sys
 print("Python executing Flask app:", sys.executable)
 
+
 SPOTIFY_TOKEN = "972e38506b164833aea4abe281f96585"
 
 app = Flask(__name__)
@@ -18,6 +19,11 @@ CORS(app, origins=["https://yomi16.nz", "http://127.0.0.1:3000"], supports_crede
 
 app.config['UPLOAD_FOLDER'] = 'uploads'  # create this folder
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB
+
+app.config["JWT_SECRET_KEY"] = "8B8F6C837070F3485BB9015A3E43255B"
+app.config["JWT_TOKEN_LOCATION"] = ["headers"]
+
+jwt = JWTManager(app)
 
 # Connect to MySQL
 db = mysql.connector.connect(
