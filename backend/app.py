@@ -46,6 +46,15 @@ db = mysql.connector.connect(
     pool_size=5
 )
 
+def execute_query(cursor, query, params=None):
+    if params is None:
+        cursor.execute(query)
+    else:
+        cursor.execute(query, params)
+    # Flush all unread result sets to avoid "Unread result found" errors
+    while cursor.nextset():
+        cursor.fetchall()
+
 @app.route('/api/test', methods=['GET'])
 def test():
     return jsonify({"status": "OK", "message": "Test successful"}), 200
@@ -54,7 +63,7 @@ def test():
 def db_status():
     try:
         with db.cursor() as cursor:
-            cursor.execute("SELECT 1")
+            execute_query(cursor, "SELECT 1")
         return jsonify({"status": "OK", "message": "Database connected"}), 200
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
@@ -62,7 +71,7 @@ def db_status():
 @app.route('/api/users')
 def get_users():
     with db.cursor(dictionary=True) as cursor:
-        cursor.execute("SELECT * FROM core_users")
+        execute_query(cursor, "SELECT * FROM core_users")
         users = cursor.fetchall()
     return jsonify(users)
 
@@ -84,7 +93,7 @@ def sync_user():
                     show_explicit = VALUES(show_explicit),
                     dark_mode = VALUES(dark_mode)
             """
-            cursor.execute(query, (
+            execute_query(cursor, query, (
                 data['auth0_id'],
                 data['email'],
                 data.get('username'),
@@ -144,69 +153,70 @@ def upload_spotify_json():
         if not isinstance(data, list):
             return jsonify({"error": "Expected a list of streaming records"}), 400
 
-        # Get user with auth_id
         with db.cursor() as cursor:
-            cursor.execute("SELECT user_id FROM core_users WHERE auth0_id = %s", (auth0_id,))
+            execute_query(cursor, "SELECT user_id FROM core_users WHERE auth0_id = %s", (auth0_id,))
             user = cursor.fetchone()
             if not user:
                 return jsonify({"error": "User not found"}), 404
             user_id = user[0]
 
-        inserted = 0
-        for stream in data:
-            ts = stream.get("ts")
-            uri = stream.get("spotify_track_uri")
-            if not ts or not uri:
-                continue
+            inserted = 0
+            for stream in data:
+                ts = stream.get("ts")
+                uri = stream.get("spotify_track_uri")
+                if not ts or not uri:
+                    continue
 
-            with db.cursor() as cursor:
-                cursor.execute("SELECT usage_id FROM usage_logs WHERE user_id = %s AND ts = %s", (user_id, ts))
+                execute_query(cursor, "SELECT usage_id FROM usage_logs WHERE user_id = %s AND ts = %s", (user_id, ts))
                 if cursor.fetchone():
-                    continue  # Duplicate
+                    continue  # Duplicate by user + timestamp
 
-                cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri = %s", (uri,))
+                execute_query(cursor, "SELECT song_id FROM core_songs WHERE spotify_uri = %s", (uri,))
                 song = cursor.fetchone()
                 if not song:
                     metadata = get_spotify_metadata(uri)
                     if not metadata:
                         continue
 
-                    cursor.execute("""
-                        INSERT INTO core_songs (spotify_uri, track_name, artist_name, album_name, duration_ms, image_url)
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                    execute_query(cursor, """
+                        INSERT INTO core_songs (
+                            spotify_uri, track_name,
+                            artist_name, artist_id,
+                            album_name, album_id, album_type, album_uri,
+                            release_date, release_date_precision,
+                            duration_ms, is_explicit,
+                            image_url, preview_url, popularity, is_local
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """, (
-                        uri,
-                        metadata["track_name"],
-                        metadata["artist_name"],
-                        metadata["album_name"],
-                        metadata["duration_ms"],
-                        metadata["image_url"]
+                        uri, metadata["track_name"],
+                        metadata["artist_name"], metadata["artist_id"],
+                        metadata["album_name"], metadata["album_id"], metadata["album_type"], metadata["album_uri"],
+                        metadata["release_date"], metadata["release_date_precision"],
+                        metadata["duration_ms"], metadata["is_explicit"],
+                        metadata["image_url"], metadata["preview_url"], metadata["popularity"], metadata["is_local"]
                     ))
                     song_id = cursor.lastrowid
                 else:
                     song_id = song[0]
 
-                cursor.execute("""
-                    INSERT INTO core_songs (
-                        spotify_uri, track_name,
-                        artist_name, artist_id,
-                        album_name, album_id, album_type, album_uri,
-                        release_date, release_date_precision,
-                        duration_ms, is_explicit,
-                        image_url, preview_url, popularity, is_local
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                execute_query(cursor, """
+                    INSERT INTO usage_logs (
+                        user_id, song_id, ts, ms_played, platform, conn_country, ip_addr,
+                        spotify_track_uri, episode_name, episode_show_name, reason_start,
+                        reason_end, shuffle, skipped, offline, offline_timestamp, incognito_mode
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    uri, metadata["track_name"],
-                    metadata["artist_name"], metadata["artist_id"],
-                    metadata["album_name"], metadata["album_id"], metadata["album_type"], metadata["album_uri"],
-                    metadata["release_date"], metadata["release_date_precision"],
-                    metadata["duration_ms"], metadata["is_explicit"],
-                    metadata["image_url"], metadata["preview_url"], metadata["popularity"], metadata["is_local"]
+                    user_id, song_id, datetime.fromisoformat(ts.replace("Z", "+00:00")),
+                    stream.get("ms_played"), stream.get("platform"), stream.get("conn_country"),
+                    stream.get("ip_addr"), uri, stream.get("episode_name"),
+                    stream.get("episode_show_name"), stream.get("reason_start"),
+                    stream.get("reason_end"), stream.get("shuffle"), stream.get("skipped"),
+                    stream.get("offline"), stream.get("offline_timestamp"), stream.get("incognito_mode")
                 ))
-
                 inserted += 1
 
-        db.commit()
+            db.commit()
+
         return jsonify({"status": "success", "inserted": inserted}), 200
 
     except json.JSONDecodeError:
