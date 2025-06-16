@@ -20,10 +20,10 @@ CORS(app, origins=["https://yomi16.nz", "http://127.0.0.1:3000"], supports_crede
 app.config['UPLOAD_FOLDER'] = 'uploads'  # create this folder
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB
 
-app.config["JWT_SECRET_KEY"] = "8B8F6C837070F3485BB9015A3E43255B"
 app.config["JWT_TOKEN_LOCATION"] = ["headers"]
 app.config["JWT_ALGORITHM"] = "RS256"
-app.config["JWT_PUBLIC_KEY"] = """-----BEGIN PUBLIC KEY-----
+app.config["JWT_PUBLIC_KEY"] = """
+-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyS11srldAwen04iYxtny
 feW/SwvXzjY1nVva81vwk1yZHUFBApNlrlPuSS2K1SLnO/uAKsnldTf27Jvvgv8T
 h6QdBMz0fYqCjEdhErzngCdYO6xsmNTiiB2aXJIjkjEvVg+P2rKAh3asUgI66MuP
@@ -31,7 +31,8 @@ h6QdBMz0fYqCjEdhErzngCdYO6xsmNTiiB2aXJIjkjEvVg+P2rKAh3asUgI66MuP
 ucpignGsRTOVhSwDZ+q0OmEmDD8Halv0RWeEMAPHBMLxiLuLTm6U3gN9IEbMo6nU
 85Ot80bZxDYOUz6m7iWGQqkrnEEMyy+hfBAmoUkm8wSYlmh/g8Ejm2XVo358ime0
 vwIDAQAB
------END PUBLIC KEY-----"""
+-----END PUBLIC KEY-----
+"""
 
 jwt = JWTManager(app)
 
