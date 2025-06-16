@@ -55,10 +55,6 @@ def execute_query(cursor, query, params=None):
     while cursor.nextset():
         cursor.fetchall()
 
-@app.route('/api/test', methods=['GET'])
-def test():
-    return jsonify({"status": "OK", "message": "Test successful"}), 200
-
 @app.route('/api/status', methods=['GET'])
 def db_status():
     try:
@@ -68,12 +64,12 @@ def db_status():
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
-@app.route('/api/users')
-def get_users():
-    with db.cursor(dictionary=True) as cursor:
-        execute_query(cursor, "SELECT * FROM core_users")
-        users = cursor.fetchall()
-    return jsonify(users)
+@app.route('/api/debug-auth', methods=['GET'])
+@jwt_required()
+def debug_auth():
+    auth0_id = get_jwt_identity()
+    return jsonify({"auth0_id_received": auth0_id}), 200
+
 
 @app.route('/api/users/sync', methods=['POST'])
 def sync_user():
@@ -139,6 +135,8 @@ def get_spotify_metadata(uri):
 @jwt_required()
 def upload_spotify_json():
     auth0_id = get_jwt_identity()
+    print("DEBUG auth0_id:", auth0_id)   # logs to your server console
+    return jsonify({"auth0_id_received": auth0_id})
 
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
