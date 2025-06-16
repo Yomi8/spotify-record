@@ -129,6 +129,13 @@ def get_spotify_metadata(uri):
 @app.route('/api/upload-spotify-json', methods=['POST'])
 @jwt_required()
 def upload_spotify_json():
+    try:
+        token = request.headers.get("Authorization", "").split(" ")[1]
+        import jwt
+        print("Token header:", jwt.get_unverified_header(token))
+    except Exception as e:
+        print("JWT header parse failed:", e)
+
     auth0_id = get_jwt_identity()
 
     if 'file' not in request.files:
