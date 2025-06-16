@@ -103,12 +103,26 @@ def get_spotify_metadata(uri):
     })
     if r.status_code == 200:
         d = r.json()
+        album = d["album"]
         return {
             "track_name": d["name"],
             "artist_name": d["artists"][0]["name"],
-            "album_name": d["album"]["name"],
+            "artist_id": d["artists"][0]["id"],
+
+            "album_name": album["name"],
+            "album_id": album["id"],
+            "album_type": album.get("album_type"),
+            "album_uri": album.get("uri"),
+            "release_date": album.get("release_date"),
+            "release_date_precision": album.get("release_date_precision"),
+
             "duration_ms": d["duration_ms"],
-            "image_url": d["album"]["images"][0]["url"] if d["album"]["images"] else None
+            "is_explicit": d["explicit"],
+
+            "image_url": album["images"][0]["url"] if album["images"] else None,
+            "preview_url": d.get("preview_url"),
+            "popularity": d.get("popularity"),
+            "is_local": d.get("is_local", False)
         }
     return None
 
@@ -130,8 +144,9 @@ def upload_spotify_json():
         if not isinstance(data, list):
             return jsonify({"error": "Expected a list of streaming records"}), 400
 
+        # Get user with auth_id
         with db.cursor() as cursor:
-            cursor.execute("SELECT id FROM core_users WHERE auth0_id = %s", (auth0_id,))
+            cursor.execute("SELECT user_id FROM core_users WHERE auth0_id = %s", (auth0_id,))
             user = cursor.fetchone()
             if not user:
                 return jsonify({"error": "User not found"}), 404
@@ -145,11 +160,11 @@ def upload_spotify_json():
                 continue
 
             with db.cursor() as cursor:
-                cursor.execute("SELECT id FROM usage_logs WHERE user_id = %s AND ts = %s", (user_id, ts))
+                cursor.execute("SELECT usage_id FROM usage_logs WHERE user_id = %s AND ts = %s", (user_id, ts))
                 if cursor.fetchone():
                     continue  # Duplicate
 
-                cursor.execute("SELECT id FROM core_songs WHERE spotify_uri = %s", (uri,))
+                cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri = %s", (uri,))
                 song = cursor.fetchone()
                 if not song:
                     metadata = get_spotify_metadata(uri)
@@ -172,19 +187,23 @@ def upload_spotify_json():
                     song_id = song[0]
 
                 cursor.execute("""
-                    INSERT INTO usage_logs (
-                        user_id, song_id, ts, ms_played, platform, conn_country, ip_addr,
-                        spotify_track_uri, episode_name, episode_show_name, reason_start,
-                        reason_end, shuffle, skipped, offline, offline_timestamp, incognito_mode
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO core_songs (
+                        spotify_uri, track_name,
+                        artist_name, artist_id,
+                        album_name, album_id, album_type, album_uri,
+                        release_date, release_date_precision,
+                        duration_ms, is_explicit,
+                        image_url, preview_url, popularity, is_local
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    user_id, song_id, datetime.fromisoformat(ts.replace("Z", "+00:00")),
-                    stream.get("ms_played"), stream.get("platform"), stream.get("conn_country"),
-                    stream.get("ip_addr"), uri, stream.get("episode_name"),
-                    stream.get("episode_show_name"), stream.get("reason_start"),
-                    stream.get("reason_end"), stream.get("shuffle"), stream.get("skipped"),
-                    stream.get("offline"), stream.get("offline_timestamp"), stream.get("incognito_mode")
+                    uri, metadata["track_name"],
+                    metadata["artist_name"], metadata["artist_id"],
+                    metadata["album_name"], metadata["album_id"], metadata["album_type"], metadata["album_uri"],
+                    metadata["release_date"], metadata["release_date_precision"],
+                    metadata["duration_ms"], metadata["is_explicit"],
+                    metadata["image_url"], metadata["preview_url"], metadata["popularity"], metadata["is_local"]
                 ))
+
                 inserted += 1
 
         db.commit()
