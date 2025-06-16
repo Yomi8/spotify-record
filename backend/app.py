@@ -5,11 +5,10 @@ import mysql.connector
 import json
 import os
 from datetime import datetime
-import json, requests
-
+import requests
 import sys
-print("Python executing Flask app:", sys.executable)
 
+print("Python executing Flask app:", sys.executable)
 
 SPOTIFY_TOKEN = "972e38506b164833aea4abe281f96585"
 
@@ -17,9 +16,10 @@ app = Flask(__name__)
 
 CORS(app, origins=["https://yomi16.nz", "http://127.0.0.1:3000"], supports_credentials=True)
 
-app.config['UPLOAD_FOLDER'] = 'uploads'  # create this folder
+app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB
 
+# JWT Setup
 app.config["JWT_TOKEN_LOCATION"] = ["headers"]
 app.config["JWT_ALGORITHM"] = "RS256"
 app.config["JWT_PUBLIC_KEY"] = """
@@ -36,15 +36,15 @@ vwIDAQAB
 
 jwt = JWTManager(app)
 
-# Connect to MySQL
+# MySQL Connection
 db = mysql.connector.connect(
     host="localhost",
     user="recordserver",
     password="$3000JHCpaperPC",
-    database="spotifydb"
+    database="spotifydb",
+    pool_name="spotify_pool",
+    pool_size=5
 )
-
-cursor = db.cursor()
 
 @app.route('/api/test', methods=['GET'])
 def test():
@@ -53,48 +53,45 @@ def test():
 @app.route('/api/status', methods=['GET'])
 def db_status():
     try:
-        cursor.execute("SELECT 1")
+        with db.cursor() as cursor:
+            cursor.execute("SELECT 1")
         return jsonify({"status": "OK", "message": "Database connected"}), 200
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
 @app.route('/api/users')
 def get_users():
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM core_users")
-    users = cursor.fetchall()
-    cursor.close()
+    with db.cursor(dictionary=True) as cursor:
+        cursor.execute("SELECT * FROM core_users")
+        users = cursor.fetchall()
     return jsonify(users)
 
 @app.route('/api/users/sync', methods=['POST'])
 def sync_user():
     data = request.get_json()
-
     required_fields = ['auth0_id', 'email']
     if not all(field in data for field in required_fields):
         return jsonify({"status": "ERROR", "message": "Missing required fields"}), 400
 
-    auth0_id = data['auth0_id']
-    email = data['email']
-    username = data.get('username', None)
-    show_explicit = int(data.get('show_explicit', 1))
-    dark_mode = int(data.get('dark_mode', 0))
-
     try:
-        cursor = db.cursor()
-        # Insert or update user
-        query = """
-        INSERT INTO core_users (auth0_id, email, username, show_explicit, dark_mode)
-        VALUES (%s, %s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE
-            email = VALUES(email),
-            username = VALUES(username),
-            show_explicit = VALUES(show_explicit),
-            dark_mode = VALUES(dark_mode)
-        """
-        cursor.execute(query, (auth0_id, email, username, show_explicit, dark_mode))
-        db.commit()
-        cursor.close()
+        with db.cursor() as cursor:
+            query = """
+                INSERT INTO core_users (auth0_id, email, username, show_explicit, dark_mode)
+                VALUES (%s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    email = VALUES(email),
+                    username = VALUES(username),
+                    show_explicit = VALUES(show_explicit),
+                    dark_mode = VALUES(dark_mode)
+            """
+            cursor.execute(query, (
+                data['auth0_id'],
+                data['email'],
+                data.get('username'),
+                int(data.get('show_explicit', 1)),
+                int(data.get('dark_mode', 0))
+            ))
+            db.commit()
         return jsonify({"status": "OK", "message": "User synced successfully"}), 200
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
@@ -115,7 +112,6 @@ def get_spotify_metadata(uri):
         }
     return None
 
-
 @app.route('/api/upload-spotify-json', methods=['POST'])
 @jwt_required()
 def upload_spotify_json():
@@ -129,20 +125,17 @@ def upload_spotify_json():
         return jsonify({"error": "Invalid file"}), 400
 
     try:
-        content = file.read(20 * 1024 * 1024)
-        data = json.loads(content)
+        data = json.loads(file.read())
 
         if not isinstance(data, list):
             return jsonify({"error": "Expected a list of streaming records"}), 400
 
-        cursor = db.cursor()
-
-        # Get user_id from auth0_id
-        cursor.execute("SELECT id FROM core_users WHERE auth0_id = %s", (auth0_id,))
-        user = cursor.fetchone()
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-        user_id = user[0]
+        with db.cursor() as cursor:
+            cursor.execute("SELECT id FROM core_users WHERE auth0_id = %s", (auth0_id,))
+            user = cursor.fetchone()
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+            user_id = user[0]
 
         inserted = 0
         for stream in data:
@@ -151,53 +144,50 @@ def upload_spotify_json():
             if not ts or not uri:
                 continue
 
-            # Check if stream already exists for user
-            cursor.execute("SELECT id FROM usage_logs WHERE user_id = %s AND ts = %s", (user_id, ts))
-            if cursor.fetchone():
-                continue  # skip duplicates by timestamp
+            with db.cursor() as cursor:
+                cursor.execute("SELECT id FROM usage_logs WHERE user_id = %s AND ts = %s", (user_id, ts))
+                if cursor.fetchone():
+                    continue  # Duplicate
 
-            # Get or insert song
-            cursor.execute("SELECT id FROM core_songs WHERE spotify_uri = %s", (uri,))
-            song = cursor.fetchone()
-            if not song:
-                metadata = get_spotify_metadata(uri)
-                if not metadata:
-                    continue  # skip if Spotify API fails
+                cursor.execute("SELECT id FROM core_songs WHERE spotify_uri = %s", (uri,))
+                song = cursor.fetchone()
+                if not song:
+                    metadata = get_spotify_metadata(uri)
+                    if not metadata:
+                        continue
+
+                    cursor.execute("""
+                        INSERT INTO core_songs (spotify_uri, track_name, artist_name, album_name, duration_ms, image_url)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (
+                        uri,
+                        metadata["track_name"],
+                        metadata["artist_name"],
+                        metadata["album_name"],
+                        metadata["duration_ms"],
+                        metadata["image_url"]
+                    ))
+                    song_id = cursor.lastrowid
+                else:
+                    song_id = song[0]
 
                 cursor.execute("""
-                    INSERT INTO core_songs (spotify_uri, track_name, artist_name, album_name, duration_ms, image_url)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    INSERT INTO usage_logs (
+                        user_id, song_id, ts, ms_played, platform, conn_country, ip_addr,
+                        spotify_track_uri, episode_name, episode_show_name, reason_start,
+                        reason_end, shuffle, skipped, offline, offline_timestamp, incognito_mode
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    uri,
-                    metadata["track_name"],
-                    metadata["artist_name"],
-                    metadata["album_name"],
-                    metadata["duration_ms"],
-                    metadata["image_url"]
+                    user_id, song_id, datetime.fromisoformat(ts.replace("Z", "+00:00")),
+                    stream.get("ms_played"), stream.get("platform"), stream.get("conn_country"),
+                    stream.get("ip_addr"), uri, stream.get("episode_name"),
+                    stream.get("episode_show_name"), stream.get("reason_start"),
+                    stream.get("reason_end"), stream.get("shuffle"), stream.get("skipped"),
+                    stream.get("offline"), stream.get("offline_timestamp"), stream.get("incognito_mode")
                 ))
-                song_id = cursor.lastrowid
-            else:
-                song_id = song[0]
-
-            # Insert stream
-            cursor.execute("""
-                INSERT INTO usage_logs (
-                    user_id, song_id, ts, ms_played, platform, conn_country, ip_addr,
-                    spotify_track_uri, episode_name, episode_show_name, reason_start,
-                    reason_end, shuffle, skipped, offline, offline_timestamp, incognito_mode
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                user_id, song_id, datetime.fromisoformat(ts.replace("Z", "+00:00")),
-                stream.get("ms_played"), stream.get("platform"), stream.get("conn_country"),
-                stream.get("ip_addr"), uri, stream.get("episode_name"),
-                stream.get("episode_show_name"), stream.get("reason_start"),
-                stream.get("reason_end"), stream.get("shuffle"), stream.get("skipped"),
-                stream.get("offline"), stream.get("offline_timestamp"), stream.get("incognito_mode")
-            ))
-            inserted += 1
+                inserted += 1
 
         db.commit()
-        cursor.close()
         return jsonify({"status": "success", "inserted": inserted}), 200
 
     except json.JSONDecodeError:
