@@ -13,4 +13,4 @@ celery.conf.task_routes = {
     'tasks.process_spotify_json_file': {'queue': 'spotify'}
 }
 
-from tasks import process_spotify_json_file
+import tasks

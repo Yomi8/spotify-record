@@ -45,6 +45,8 @@ def get_spotify_metadata(uri):
 
 @celery.task(bind=True)
 def process_spotify_json_file(self, filepath, auth0_id):
+    print("Task started for file:", filepath, "by user:", auth0_id)
+
     inserted = 0
     try:
         with open(filepath, 'r') as f:
