@@ -1,5 +1,6 @@
 from celery import Celery
 
+
 # Celery config
 
 celery = Celery(
@@ -11,3 +12,5 @@ celery = Celery(
 celery.conf.task_routes = {
     'tasks.process_spotify_json_file': {'queue': 'spotify'}
 }
+
+from tasks import process_spotify_json_file
