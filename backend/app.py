@@ -1,13 +1,15 @@
 from flask import Flask, request, jsonify
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from flask_cors import CORS
+from celery.result import AsyncResult
+from celery_app import celery
+from tasks import process_spotify_json_file
 import mysql.connector.pooling
 from datetime import datetime
 import requests
 import sys
 import os
 import json
-from tasks import process_spotify_json_file  # import celery task
 import uuid
 
 print("Python executing Flask app:", sys.executable)
@@ -64,6 +66,15 @@ def db_status():
         return jsonify({"status": "OK", "message": "Database connected"}), 200
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
+
+@app.route('/api/task-status/<task_id>', methods=['GET'])
+def task_status(task_id):
+    result = AsyncResult(task_id, app=celery)
+    return jsonify({
+        "task_id": task_id,
+        "status": result.status,
+        "result": result.result if result.ready() else None
+    })
 
 @app.route('/api/users/sync', methods=['POST'])
 def sync_user():

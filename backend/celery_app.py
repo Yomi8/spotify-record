@@ -1,5 +1,7 @@
 from celery import Celery
 
+# Celery config
+
 celery = Celery(
     'spotify_tasks',
     broker='redis://localhost:6379/0',
