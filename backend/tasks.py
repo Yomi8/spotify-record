@@ -5,6 +5,7 @@ import mysql.connector.pooling
 import requests
 
 SPOTIFY_TOKEN = "972e38506b164833aea4abe281f96585"
+SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
 
 # Setup MySQL connection pool (reuse same config)
 db_pool = mysql.connector.pooling.MySQLConnectionPool(
@@ -18,7 +19,10 @@ db_pool = mysql.connector.pooling.MySQLConnectionPool(
 
 def get_spotify_metadata(uri):
     track_uri = uri.split(":")[-1]
-    r = requests.get(f"https://api.spotify.com/v1/tracks/{track_uri}", headers={
+
+    endpoint = f"{SPOTIFY_API_BASE_URL}/tracks/{track_uri}"
+
+    r = requests.get(endpoint, headers={
         "Authorization": f"Bearer {SPOTIFY_TOKEN}"
     })
     if r.status_code == 200:
@@ -41,6 +45,10 @@ def get_spotify_metadata(uri):
             "popularity": d.get("popularity"),
             "is_local": d.get("is_local", False)
         }
+    else:
+        print(f"Spotify API Error for URI: {uri}")
+        print(f"Status Code: {r.status_code}")
+        print(f"Response Body: {r.text}")
     return None
 
 @celery.task(bind=True)
