@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from celery_app import celery
+from spotify_client import sp
 import mysql.connector.pooling
 import requests
 import os
@@ -20,54 +21,31 @@ db_pool = mysql.connector.pooling.MySQLConnectionPool(
     database="spotifydb"
 )
 
-def get_spotify_token():
-    # Reuse if not expired
-    if SPOTIFY_TOKEN_INFO["access_token"] and SPOTIFY_TOKEN_INFO["expires_at"] > time.time():
-        return SPOTIFY_TOKEN_INFO["access_token"]
-
-    auth_header = base64.b64encode(f"{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}".encode()).decode()
-    headers = {"Authorization": f"Basic {auth_header}"}
-    data = {"grant_type": "client_credentials"}
-
-    r = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
-    r.raise_for_status()
-
-    token_data = r.json()
-    SPOTIFY_TOKEN_INFO["access_token"] = token_data["access_token"]
-    SPOTIFY_TOKEN_INFO["expires_at"] = time.time() + token_data["expires_in"]
-    return SPOTIFY_TOKEN_INFO["access_token"]
-
-
 def get_spotify_metadata(uri):
-    track_uri = uri.split(":")[-1]
-    token = get_spotify_token()
-
-    headers = {"Authorization": f"Bearer {token}"}
-    r = requests.get(f"https://api.spotify.com/v1/tracks/{track_uri}", headers=headers)
-
-    if r.status_code == 200:
-        d = r.json()
-        album = d["album"]
+    track_id = uri.split(":")[-1]
+    try:
+        track = sp.track(track_id)
+        album = track["album"]
         return {
-            "track_name": d["name"],
-            "artist_name": d["artists"][0]["name"],
-            "artist_id": d["artists"][0]["id"],
+            "track_name": track["name"],
+            "artist_name": track["artists"][0]["name"],
+            "artist_id": track["artists"][0]["id"],
             "album_name": album["name"],
             "album_id": album["id"],
             "album_type": album.get("album_type"),
             "album_uri": album.get("uri"),
             "release_date": album.get("release_date"),
             "release_date_precision": album.get("release_date_precision"),
-            "duration_ms": d["duration_ms"],
-            "is_explicit": d["explicit"],
+            "duration_ms": track["duration_ms"],
+            "is_explicit": track["explicit"],
             "image_url": album["images"][0]["url"] if album["images"] else None,
-            "preview_url": d.get("preview_url"),
-            "popularity": d.get("popularity"),
-            "is_local": d.get("is_local", False)
+            "preview_url": track.get("preview_url"),
+            "popularity": track.get("popularity"),
+            "is_local": track.get("is_local", False)
         }
-    else:
-        print("Spotify API error:", r.status_code, r.text)
-    return None
+    except Exception as e:
+        print(f"Error fetching track metadata: {e}")
+        return None
 
 
 @celery.task(bind=True)
