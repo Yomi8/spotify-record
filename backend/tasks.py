@@ -3,8 +3,11 @@ from datetime import datetime
 from celery_app import celery
 import mysql.connector.pooling
 import requests
+import os
 
-SPOTIFY_TOKEN = "972e38506b164833aea4abe281f96585"
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+SPOTIFY_TOKEN_INFO = {"access_token": None, "expires_at": 0}
 SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
 
 # Setup MySQL connection pool (reuse same config)
@@ -17,14 +20,31 @@ db_pool = mysql.connector.pooling.MySQLConnectionPool(
     database="spotifydb"
 )
 
+def get_spotify_token():
+    # Reuse if not expired
+    if SPOTIFY_TOKEN_INFO["access_token"] and SPOTIFY_TOKEN_INFO["expires_at"] > time.time():
+        return SPOTIFY_TOKEN_INFO["access_token"]
+
+    auth_header = base64.b64encode(f"{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}".encode()).decode()
+    headers = {"Authorization": f"Basic {auth_header}"}
+    data = {"grant_type": "client_credentials"}
+
+    r = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
+    r.raise_for_status()
+
+    token_data = r.json()
+    SPOTIFY_TOKEN_INFO["access_token"] = token_data["access_token"]
+    SPOTIFY_TOKEN_INFO["expires_at"] = time.time() + token_data["expires_in"]
+    return SPOTIFY_TOKEN_INFO["access_token"]
+
+
 def get_spotify_metadata(uri):
     track_uri = uri.split(":")[-1]
+    token = get_spotify_token()
 
-    endpoint = f"{SPOTIFY_API_BASE_URL}/tracks/{track_uri}"
+    headers = {"Authorization": f"Bearer {token}"}
+    r = requests.get(f"https://api.spotify.com/v1/tracks/{track_uri}", headers=headers)
 
-    r = requests.get(endpoint, headers={
-        "Authorization": f"Bearer {SPOTIFY_TOKEN}"
-    })
     if r.status_code == 200:
         d = r.json()
         album = d["album"]
@@ -46,10 +66,9 @@ def get_spotify_metadata(uri):
             "is_local": d.get("is_local", False)
         }
     else:
-        print(f"Spotify API Error for URI: {uri}")
-        print(f"Status Code: {r.status_code}")
-        print(f"Response Body: {r.text}")
+        print("Spotify API error:", r.status_code, r.text)
     return None
+
 
 @celery.task(bind=True)
 def process_spotify_json_file(self, filepath, auth0_id):
