@@ -70,11 +70,20 @@ def db_status():
 @app.route('/api/task-status/<task_id>', methods=['GET'])
 def task_status(task_id):
     result = AsyncResult(task_id, app=celery)
-    return jsonify({
+    response = {
         "task_id": task_id,
-        "status": result.status,
-        "result": result.result if result.ready() else None
-    })
+        "status": result.status
+    }
+
+    # If task is in progress or failed, get metadata (e.g., progress, errors)
+    if result.state == "PROGRESS" or result.state == "FAILURE":
+        response["progress"] = result.info  # This includes what you passed to update_state
+
+    # If task finished
+    elif result.ready():
+        response["result"] = result.result
+
+    return jsonify(response)
 
 @app.route('/api/users/sync', methods=['POST'])
 def sync_user():

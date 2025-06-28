@@ -53,37 +53,38 @@ def get_spotify_metadata(uri):
 
 @celery.task(bind=True)
 def process_spotify_json_file(self, filepath, auth0_id):
-    print("Task started for file:", filepath, "by user:", auth0_id)
-
     inserted = 0
     try:
         with open(filepath, 'r') as f:
             data = json.load(f)
         if not isinstance(data, list):
-            return {'status': 'error', 'message': 'JSON is not a list'}
+            self.update_state(state='FAILURE', meta={'message': 'Uploaded file is not a JSON list'})
+            return {'status': 'error', 'message': 'Uploaded file is not a list'}
 
         conn = db_pool.get_connection()
         cursor = conn.cursor()
 
-        # Get user_id by auth0_id
         cursor.execute("SELECT user_id FROM core_users WHERE auth0_id = %s", (auth0_id,))
         user = cursor.fetchone()
         if not user:
-            cursor.close()
-            conn.close()
+            self.update_state(state='FAILURE', meta={'message': 'User not found'})
             return {'status': 'error', 'message': 'User not found'}
         user_id = user[0]
 
-        for stream in data:
+        total = len(data)
+
+        for index, stream in enumerate(data):
             ts = stream.get("ts")
             uri = stream.get("spotify_track_uri")
             if not ts or not uri:
                 continue
 
+            # Skip duplicate streams
             cursor.execute("SELECT usage_id FROM usage_logs WHERE user_id = %s AND ts = %s", (user_id, ts))
             if cursor.fetchone():
-                continue  # Skip duplicates
+                continue
 
+            # Check if song already exists
             cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri = %s", (uri,))
             song = cursor.fetchone()
             if not song:
@@ -110,6 +111,7 @@ def process_spotify_json_file(self, filepath, auth0_id):
             else:
                 song_id = song[0]
 
+            # Insert usage record
             cursor.execute("""
                 INSERT INTO usage_logs (
                     user_id, song_id, ts, ms_played, platform, conn_country, ip_addr,
@@ -124,13 +126,27 @@ def process_spotify_json_file(self, filepath, auth0_id):
                 stream.get("reason_end"), stream.get("shuffle"), stream.get("skipped"),
                 stream.get("offline"), stream.get("offline_timestamp"), stream.get("incognito_mode")
             ))
+
             inserted += 1
+
+            if index % 10 == 0:
+                self.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "inserted": inserted,
+                        "processed": index,
+                        "total": total,
+                        "progress_pct": int(index / total * 100)
+                    }
+                )
 
         conn.commit()
         cursor.close()
         conn.close()
 
-        return {'status': 'success', 'inserted': inserted}
+        return {'status': 'success', 'inserted': inserted, 'total': total}
 
     except Exception as e:
+        self.update_state(state='FAILURE', meta={'message': str(e)})
         return {'status': 'error', 'message': str(e)}
+
