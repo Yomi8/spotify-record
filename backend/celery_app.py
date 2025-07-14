@@ -1,8 +1,5 @@
 from celery import Celery
 
-
-# Celery config
-
 celery = Celery(
     'spotify_tasks',
     broker='redis://localhost:6379/0',
@@ -10,6 +7,8 @@ celery = Celery(
     include=['tasks']
 )
 
+# Route each task to a specific queue
 celery.conf.task_routes = {
-    'tasks.process_spotify_json_file': {'queue': 'spotify'}
+    'tasks.process_spotify_json_file': {'queue': 'uploads'},
+    'tasks.update_user_snapshots': {'queue': 'snapshots'},
 }
