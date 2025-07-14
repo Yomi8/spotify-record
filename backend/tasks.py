@@ -6,7 +6,7 @@ import mysql.connector.pooling
 import requests
 import os
 from dotenv import load_dotenv
-from datetime import timedelta
+import datetime
 
 load_dotenv()
 
@@ -169,14 +169,14 @@ def update_user_snapshots(self, user_id=None):
     periods = ['day', 'week', 'month', 'year']
 
     def get_range_bounds(period):
-        now = datetime.utcnow()
+        now = datetime.now(datetime.timezone.utc)
         if period == 'day':
             start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            end = start + timedelta(days=1)
+            end = start + datetime.timedelta(days=1)
         elif period == 'week':
-            start = now - timedelta(days=now.weekday())
+            start = now - datetime.timedelta(days=now.weekday())
             start = start.replace(hour=0, minute=0, second=0, microsecond=0)
-            end = start + timedelta(days=7)
+            end = start + datetime.timedelta(days=7)
         elif period == 'month':
             start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             if start.month == 12:
