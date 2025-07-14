@@ -1,9 +1,9 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Blueprint
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from celery.result import AsyncResult
 from celery_app import celery
-from tasks import process_spotify_json_file
+from tasks import process_spotify_json_file, update_user_snapshots
 import mysql.connector.pooling
 from datetime import datetime
 import requests
@@ -11,6 +11,8 @@ import sys
 import os
 import json
 import uuid
+
+snapshots_bp = Blueprint("snapshots", __name__)
 
 print("Python executing Flask app:", sys.executable)
 
@@ -132,6 +134,16 @@ def upload_spotify_json():
     task = process_spotify_json_file.delay(filepath, auth0_id)
 
     return jsonify({"status": "processing", "task_id": task.id}), 202
+
+@snapshots_bp.route("/api/snapshots/generate", methods=["POST"])
+@jwt_required()
+def generate_snapshots():
+    user_id = get_jwt_identity()  # assuming this returns user_id
+
+    # Trigger the task for only the requesting user
+    task = update_user_snapshots.apply_async(args=[user_id])
+
+    return jsonify({"status": "started", "task_id": task.id}), 202
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

@@ -150,3 +150,155 @@ def process_spotify_json_file(self, filepath, auth0_id):
         self.update_state(state='FAILURE', meta={'message': str(e)})
         return {'status': 'error', 'message': str(e)}
 
+@celery.task(bind=True)
+def update_user_snapshots(self, user_id=None):
+    """
+    Generate snapshots for a specific user if user_id is provided,
+    otherwise generate snapshots for all users.
+    """
+    conn = db_pool.get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if user_id is not None:
+        users = [{'user_id': user_id}]
+    else:
+        cursor.execute("SELECT user_id FROM core_users")
+        users = cursor.fetchall()
+
+    periods = ['day', 'week', 'month', 'year']
+
+    def get_range_bounds(period):
+        now = datetime.utcnow()
+        if period == 'day':
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            end = start + timedelta(days=1)
+        elif period == 'week':
+            start = now - timedelta(days=now.weekday())
+            start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+            end = start + timedelta(days=7)
+        elif period == 'month':
+            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            if start.month == 12:
+                end = start.replace(year=start.year + 1, month=1)
+            else:
+                end = start.replace(month=start.month + 1)
+        elif period == 'year':
+            start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            end = start.replace(year=start.year + 1)
+        else:
+            raise ValueError("Unsupported period")
+        return start, end
+
+    def calculate_longest_binge(rows):
+        if not rows:
+            return None, 0, None, None
+
+        max_song = None
+        max_count = 0
+        max_start_ts = None
+        max_end_ts = None
+
+        current_song = rows[0]['song_id']
+        current_start_ts = rows[0]['ts']
+        current_count = 1
+
+        for i in range(1, len(rows)):
+            song_id = rows[i]['song_id']
+            ts = rows[i]['ts']
+
+            if song_id == current_song:
+                current_count += 1
+            else:
+                if current_count > max_count:
+                    max_song = current_song
+                    max_count = current_count
+                    max_start_ts = current_start_ts
+                    max_end_ts = rows[i - 1]['ts']
+
+                current_song = song_id
+                current_start_ts = ts
+                current_count = 1
+
+        if current_count > max_count:
+            max_song = current_song
+            max_count = current_count
+            max_start_ts = current_start_ts
+            max_end_ts = rows[-1]['ts']
+
+        return max_song, max_count, max_start_ts, max_end_ts
+
+    for user in users:
+        uid = user['user_id']
+
+        for period in periods:
+            range_start, range_end = get_range_bounds(period)
+
+            cursor.execute("""
+                SELECT COUNT(*) AS total FROM usage_logs
+                WHERE user_id = %s AND ts BETWEEN %s AND %s
+            """, (uid, range_start, range_end))
+            total_songs = cursor.fetchone()['total']
+
+            cursor.execute("""
+                SELECT song_id, SUM(ms_played) AS total_played
+                FROM usage_logs
+                WHERE user_id = %s AND ts BETWEEN %s AND %s
+                GROUP BY song_id
+                ORDER BY total_played DESC
+                LIMIT 1
+            """, (uid, range_start, range_end))
+            song_row = cursor.fetchone()
+            most_played_song_id = song_row['song_id'] if song_row else None
+
+            cursor.execute("""
+                SELECT cs.artist_name, SUM(ul.ms_played) AS total_artist_played
+                FROM usage_logs ul
+                JOIN core_songs cs ON ul.song_id = cs.song_id
+                WHERE ul.user_id = %s AND ul.ts BETWEEN %s AND %s
+                GROUP BY cs.artist_name
+                ORDER BY total_artist_played DESC
+                LIMIT 1
+            """, (uid, range_start, range_end))
+            artist_row = cursor.fetchone()
+            most_played_artist = artist_row['artist_name'] if artist_row else None
+
+            cursor.execute("""
+                SELECT song_id, ts FROM usage_logs
+                WHERE user_id = %s AND ts BETWEEN %s AND %s
+                ORDER BY ts ASC
+            """, (uid, range_start, range_end))
+            binge_rows = cursor.fetchall()
+            binge_song_id, binge_count, binge_start_ts, binge_end_ts = calculate_longest_binge(binge_rows)
+
+            cursor.execute("""
+                INSERT INTO user_snapshots (
+                    user_id,
+                    total_songs_played,
+                    most_played_song_id,
+                    most_played_artist_name,
+                    longest_binge_song_id,
+                    binge_count,
+                    binge_start_ts,
+                    binge_end_ts,
+                    range_start,
+                    range_end,
+                    range_type
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                uid,
+                total_songs,
+                most_played_song_id,
+                most_played_artist,
+                binge_song_id,
+                binge_count,
+                binge_start_ts,
+                binge_end_ts,
+                range_start,
+                range_end,
+                period
+            ))
+
+            conn.commit()
+
+    cursor.close()
+    conn.close()
