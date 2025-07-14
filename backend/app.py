@@ -59,6 +59,18 @@ def run_query(query, params=None, commit=False, fetchone=False):
     finally:
         conn.close()
 
+def get_user_id_from_auth0(auth0_id):
+    """
+    Lookup internal user_id from auth0_id. Returns user_id (int) or None.
+    """
+    conn = db_pool.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id FROM core_users WHERE auth0_id = %s", (auth0_id,))
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return row[0] if row else None
+
 @app.route('/api/status', methods=['GET'])
 def db_status():
     try:
@@ -136,7 +148,11 @@ def upload_spotify_json():
 @app.route("/api/snapshots/generate", methods=["POST"])
 @jwt_required()
 def generate_snapshots():
-    user_id = get_jwt_identity()  # assuming this returns user_id
+    auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id)
+
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
 
     # Trigger the task for only the requesting user
     task = update_user_snapshots.apply_async(args=[user_id])
