@@ -1,16 +1,51 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useAuth0 } from '@auth0/auth0-react';
+import React, { useEffect, useState } from 'react';
 import backgroundImg from '../assets/images/background.jpg';
 
-
 export default function Home() {
-  const { user, isAuthenticated } = useAuth0();
+  const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const token = await getAccessTokenSilently();
+        const response = await fetch('/api/user/stats', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch stats');
+        }
+
+        const data = await response.json();
+        setStats(data);
+      } catch (err) {
+        console.error(err);
+        setError('Could not load stats.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchStats();
+    }
+  }, [isAuthenticated, getAccessTokenSilently]);
 
   return (
     <div
       className="container-fluid text-white py-4"
       style={{ minHeight: '100vh', background: 'linear-gradient(to right, #000, #333)' }}
-    > 
+    >
       <h1>
         Welcome{' '}
         <span>
@@ -26,15 +61,33 @@ export default function Home() {
         <div className="col-md-6">
           <div className="card bg-dark text-white shadow">
             <div className="card-header">
-              <i className="bi bi-star me-2"></i> Quick Bits
+              <i className="bi bi-bar-chart me-2"></i> Quick Bits
             </div>
             <div className="card-body">
-              <p>Info</p>
+              {!isAuthenticated && (
+                <p>Please log in to view your stats.</p>
+              )}
+
+              {isAuthenticated && loading && (
+                <p>Loading your stats...</p>
+              )}
+
+              {isAuthenticated && error && (
+                <p className="text-danger">{error}</p>
+              )}
+
+              {isAuthenticated && stats && (
+                <div>
+                  <p><strong>Total Songs Played:</strong> {stats.total_songs}</p>
+                  <p><strong>Top Artist:</strong> {stats.top_artist}</p>
+                  <p><strong>Top Genre:</strong> {stats.top_genre}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Right background image placeholder */}
+        {/* Right image */}
         <div className="col-md-6 position-relative p-0">
           <img
             src={backgroundImg}
@@ -51,14 +104,14 @@ export default function Home() {
               position: 'absolute',
               top: 0,
               left: 0,
-              width: '40%',    // width of fade area from left side of right column
+              width: '40%',
               height: '100%',
               background: 'linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0))',
-              pointerEvents: 'none', // so overlay doesn’t block clicks
+              pointerEvents: 'none',
             }}
           />
-          </div>
         </div>
+      </div>
     </div>
   );
 }
