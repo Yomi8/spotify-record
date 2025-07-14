@@ -1,6 +1,5 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useAuth0 } from '@auth0/auth0-react';
-import React, { useEffect, useState } from 'react';
 import backgroundImg from '../assets/images/background.jpg';
 
 export default function Home() {
