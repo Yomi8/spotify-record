@@ -1,13 +1,11 @@
 import json
-from datetime import datetime
+import pendulum
 from celery_app import celery
 from spotify_client import sp
 import mysql.connector.pooling
 import requests
 import os
 from dotenv import load_dotenv
-import datetime
-from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -154,10 +152,6 @@ def process_spotify_json_file(self, filepath, auth0_id):
 
 @celery.task(bind=True)
 def update_user_snapshots(self, user_id=None):
-    """
-    Generate snapshots for a specific user if user_id is provided,
-    otherwise generate snapshots for all users.
-    """
     conn = db_pool.get_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -170,26 +164,17 @@ def update_user_snapshots(self, user_id=None):
     periods = ['day', 'week', 'month', 'year']
 
     def get_range_bounds(period):
-        now = datetime.now(datetime.timezone.utc)
+        now = pendulum.now("UTC")
         if period == 'day':
-            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            end = start + timedelta(days=1)
+            return now.start_of('day'), now.end_of('day')
         elif period == 'week':
-            start = now - timedelta(days=now.weekday())
-            start = start.replace(hour=0, minute=0, second=0, microsecond=0)
-            end = start + timedelta(days=7)
+            return now.start_of('week'), now.end_of('week')
         elif period == 'month':
-            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            if start.month == 12:
-                end = start.replace(year=start.year + 1, month=1)
-            else:
-                end = start.replace(month=start.month + 1)
+            return now.start_of('month'), now.end_of('month')
         elif period == 'year':
-            start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-            end = start.replace(year=start.year + 1)
+            return now.start_of('year'), now.end_of('year')
         else:
             raise ValueError("Unsupported period")
-        return start, end
 
     def calculate_longest_binge(rows):
         if not rows:
