@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Blueprint
+from flask import Flask, request, jsonify
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from celery.result import AsyncResult
@@ -11,8 +11,6 @@ import sys
 import os
 import json
 import uuid
-
-snapshots_bp = Blueprint("snapshots", __name__)
 
 print("Python executing Flask app:", sys.executable)
 
@@ -135,7 +133,7 @@ def upload_spotify_json():
 
     return jsonify({"status": "processing", "task_id": task.id}), 202
 
-@snapshots_bp.route("/api/snapshots/generate", methods=["POST"])
+@app.route("/api/snapshots/generate", methods=["POST"])
 @jwt_required()
 def generate_snapshots():
     user_id = get_jwt_identity()  # assuming this returns user_id
