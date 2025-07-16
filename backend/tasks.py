@@ -6,6 +6,7 @@ import mysql.connector.pooling
 import requests
 import os
 from dotenv import load_dotenv
+from celery.exceptions import Ignore
 
 load_dotenv()
 
@@ -57,9 +58,17 @@ def process_spotify_json_file(self, filepath, auth0_id):
     try:
         with open(filepath, 'r') as f:
             data = json.load(f)
+
         if not isinstance(data, list):
-            self.update_state(state='FAILURE', meta={'message': 'Uploaded file is not a JSON list'})
-            return {'status': 'error', 'message': 'Uploaded file is not a list'}
+            self.update_state(
+                state='FAILURE',
+                meta={
+                    'exc_type': 'InvalidFileFormat',
+                    'exc_message': 'Uploaded file is not a JSON list',
+                    'exc_module': 'process_spotify_json_file'
+                }
+            )
+            raise Ignore()
 
         conn = db_pool.get_connection()
         cursor = conn.cursor()
@@ -67,10 +76,17 @@ def process_spotify_json_file(self, filepath, auth0_id):
         cursor.execute("SELECT user_id FROM core_users WHERE auth0_id = %s", (auth0_id,))
         user = cursor.fetchone()
         if not user:
-            self.update_state(state='FAILURE', meta={'message': 'User not found'})
-            return {'status': 'error', 'message': 'User not found'}
-        user_id = user[0]
+            self.update_state(
+                state='FAILURE',
+                meta={
+                    'exc_type': 'UserNotFound',
+                    'exc_message': f'User with auth0_id {auth0_id} not found',
+                    'exc_module': 'process_spotify_json_file'
+                }
+            )
+            raise Ignore()
 
+        user_id = user[0]
         total = len(data)
 
         for index, stream in enumerate(data):
@@ -147,7 +163,15 @@ def process_spotify_json_file(self, filepath, auth0_id):
         return {'status': 'success', 'inserted': inserted, 'total': total}
 
     except Exception as e:
-        raise RuntimeError(f"Failed to process file: {filepath} — {str(e)}") from e
+        self.update_state(
+            state='FAILURE',
+            meta={
+                'exc_type': type(e).__name__,
+                'exc_message': str(e),
+                'exc_module': e.__class__.__module__
+            }
+        )
+        raise Ignore()
 
 @celery.task(bind=True)
 def update_user_snapshots(self, user_id=None):
