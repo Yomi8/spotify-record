@@ -79,24 +79,29 @@ def db_status():
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
-@app.route('/api/task-status/<task_id>', methods=['GET'])
+@app.route("/api/task-status/<task_id>")
 def task_status(task_id):
     try:
-        result = AsyncResult(task_id, app=celery)
+        result = celery.AsyncResult(task_id)
+
         response = {
             "task_id": task_id,
             "status": result.status,
         }
 
-        if result.failed():
-            response["error"] = str(result.result)  # stringify the exception
-        elif result.ready():
-            response["result"] = result.result  # only if we’re sure it's serializable
+        if result.status == "SUCCESS":
+            response["result"] = result.result
+        elif result.status == "FAILURE":
+            response["error"] = str(result.result)
 
-        return jsonify(response), 200
+        return jsonify(response)
+
     except Exception as e:
-        app.logger.exception(f"Error fetching task status for {task_id}")
-        return jsonify({"status": "ERROR", "message": str(e)}), 500
+        app.logger.error(f"Error fetching task status for {task_id}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 @app.route('/api/users/sync', methods=['POST'])
 def sync_user():

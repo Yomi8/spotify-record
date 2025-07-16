@@ -148,7 +148,7 @@ def process_spotify_json_file(self, filepath, auth0_id):
 
     except Exception as e:
         self.update_state(state='FAILURE', meta={'message': str(e)})
-        return {'status': 'error', 'message': str(e)}
+        raise RuntimeError(f"Failed to process file: {filepath} — {str(e)}")
 
 @celery.task(bind=True)
 def update_user_snapshots(self, user_id=None):
