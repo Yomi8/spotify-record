@@ -60,15 +60,7 @@ def process_spotify_json_file(self, filepath, auth0_id):
         with open(filepath, 'r') as f:
             data = json.load(f)
         if not isinstance(data, list):
-            self.update_state(
-                state='FAILURE',
-                meta={
-                    'exc_type': 'InvalidFormatError',
-                    'exc_message': 'Uploaded file is not a JSON list',
-                    'exc_module': 'process_spotify_json_file'
-                }
-            )
-            raise Ignore()
+            raise ValueError("InvalidFormatError: Uploaded file is not a JSON list")
 
         conn = db_pool.get_connection()
         cursor = conn.cursor()
@@ -76,17 +68,9 @@ def process_spotify_json_file(self, filepath, auth0_id):
         cursor.execute("SELECT user_id FROM core_users WHERE auth0_id = %s", (auth0_id,))
         user = cursor.fetchone()
         if not user:
-            self.update_state(
-                state='FAILURE',
-                meta={
-                    'exc_type': 'UserNotFoundError',
-                    'exc_message': 'User not found',
-                    'exc_module': 'process_spotify_json_file'
-                }
-            )
-            raise Ignore()
-        user_id = user[0]
+            raise ValueError("UserNotFoundError: User not found")
 
+        user_id = user[0]
         total = len(data)
 
         for index, stream in enumerate(data):
@@ -95,12 +79,10 @@ def process_spotify_json_file(self, filepath, auth0_id):
             if not ts or not uri:
                 continue
 
-            # Skip duplicate streams
             cursor.execute("SELECT usage_id FROM usage_logs WHERE user_id = %s AND ts = %s", (user_id, ts))
             if cursor.fetchone():
                 continue
 
-            # Check if song already exists
             cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri = %s", (uri,))
             song = cursor.fetchone()
             if not song:
@@ -127,7 +109,6 @@ def process_spotify_json_file(self, filepath, auth0_id):
             else:
                 song_id = song[0]
 
-            # Insert usage record
             cursor.execute("""
                 INSERT INTO usage_logs (
                     user_id, song_id, ts, ms_played, platform, conn_country, ip_addr,
@@ -171,7 +152,7 @@ def process_spotify_json_file(self, filepath, auth0_id):
                 'exc_module': e.__class__.__module__
             }
         )
-        raise Ignore()
+        raise ValueError(f"{type(e).__name__}: {str(e)}")
 
 @celery.task(bind=True)
 def update_user_snapshots(self, user_id=None):
