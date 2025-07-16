@@ -51,16 +51,23 @@ def get_spotify_metadata(uri):
         print(f"Error fetching track metadata: {e}")
         return None
 
-
-
-@celery.task(bind=True)
+celery.task(bind=True)
 def process_spotify_json_file(self, filepath, auth0_id):
     inserted = 0
     try:
         with open(filepath, 'r') as f:
             data = json.load(f)
+
         if not isinstance(data, list):
-            raise ValueError("InvalidFormatError: Uploaded file is not a JSON list")
+            self.update_state(
+                state='FAILURE',
+                meta={
+                    'exc_type': 'ValueError',
+                    'exc_message': 'Uploaded file is not a JSON list',
+                    'exc_module': __name__,
+                }
+            )
+            raise Ignore()
 
         conn = db_pool.get_connection()
         cursor = conn.cursor()
@@ -68,7 +75,15 @@ def process_spotify_json_file(self, filepath, auth0_id):
         cursor.execute("SELECT user_id FROM core_users WHERE auth0_id = %s", (auth0_id,))
         user = cursor.fetchone()
         if not user:
-            raise ValueError("UserNotFoundError: User not found")
+            self.update_state(
+                state='FAILURE',
+                meta={
+                    'exc_type': 'ValueError',
+                    'exc_message': 'User not found',
+                    'exc_module': __name__,
+                }
+            )
+            raise Ignore()
 
         user_id = user[0]
         total = len(data)
@@ -149,10 +164,10 @@ def process_spotify_json_file(self, filepath, auth0_id):
             meta={
                 'exc_type': type(e).__name__,
                 'exc_message': str(e),
-                'exc_module': e.__class__.__module__
+                'exc_module': e.__class__.__module__,
             }
         )
-        raise ValueError(f"{type(e).__name__}: {str(e)}")
+        raise Ignore()
 
 @celery.task(bind=True)
 def update_user_snapshots(self, user_id=None):
