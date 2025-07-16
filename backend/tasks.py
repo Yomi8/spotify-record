@@ -52,18 +52,18 @@ def get_spotify_metadata(uri):
         return None
 
 
+
 @celery.task(bind=True)
 def process_spotify_json_file(self, filepath, auth0_id):
     inserted = 0
     try:
         with open(filepath, 'r') as f:
             data = json.load(f)
-
         if not isinstance(data, list):
             self.update_state(
                 state='FAILURE',
                 meta={
-                    'exc_type': 'InvalidFileFormat',
+                    'exc_type': 'InvalidFormatError',
                     'exc_message': 'Uploaded file is not a JSON list',
                     'exc_module': 'process_spotify_json_file'
                 }
@@ -79,14 +79,14 @@ def process_spotify_json_file(self, filepath, auth0_id):
             self.update_state(
                 state='FAILURE',
                 meta={
-                    'exc_type': 'UserNotFound',
-                    'exc_message': f'User with auth0_id {auth0_id} not found',
+                    'exc_type': 'UserNotFoundError',
+                    'exc_message': 'User not found',
                     'exc_module': 'process_spotify_json_file'
                 }
             )
             raise Ignore()
-
         user_id = user[0]
+
         total = len(data)
 
         for index, stream in enumerate(data):
