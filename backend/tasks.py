@@ -51,121 +51,75 @@ def get_spotify_metadata(uri):
         print(f"Error fetching track metadata: {e}")
         return None
 
-celery.task(bind=True)
-def process_spotify_json_file(self, filepath, auth0_id):
-    inserted = 0
+@celery.task(bind=True)
+def process_spotify_json_file(self, file_path, user_id):
     try:
-        with open(filepath, 'r') as f:
+        self.update_state(state="PROGRESS", meta={"msg": "Loading file"})
+        with open(file_path, "r") as f:
             data = json.load(f)
 
         if not isinstance(data, list):
-            self.update_state(
-                state='FAILURE',
-                meta={
-                    'exc_type': 'ValueError',
-                    'exc_message': 'Uploaded file is not a JSON list',
-                    'exc_module': __name__,
-                }
-            )
-            raise Ignore()
+            raise ValueError("Invalid JSON structure")
 
+        inserted = 0
         conn = db_pool.get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("SELECT user_id FROM core_users WHERE auth0_id = %s", (auth0_id,))
-        user = cursor.fetchone()
-        if not user:
+        for index, entry in enumerate(data):
             self.update_state(
-                state='FAILURE',
+                state="PROGRESS",
                 meta={
-                    'exc_type': 'ValueError',
-                    'exc_message': 'User not found',
-                    'exc_module': __name__,
+                    "msg": f"Processing entry {index+1} of {len(data)}",
+                    "inserted": inserted
                 }
             )
-            raise Ignore()
 
-        user_id = user[0]
-        total = len(data)
+            ts = pendulum.parse(entry["ts"])
+            ms_played = entry.get("ms_played", 0)
+            track_uri = entry.get("spotify_track_uri")
 
-        for index, stream in enumerate(data):
-            ts = stream.get("ts")
-            uri = stream.get("spotify_track_uri")
-            if not ts or not uri:
+            if not track_uri:
                 continue
 
-            cursor.execute("SELECT usage_id FROM usage_logs WHERE user_id = %s AND ts = %s", (user_id, ts))
+            # Check for existing entry
+            cursor.execute(
+                "SELECT 1 FROM usage_logs WHERE user_id=%s AND ts=%s",
+                (user_id, ts.to_datetime_string())
+            )
             if cursor.fetchone():
                 continue
 
-            cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri = %s", (uri,))
-            song = cursor.fetchone()
-            if not song:
-                metadata = get_spotify_metadata(uri)
-                if not metadata:
-                    continue
-                cursor.execute("""
-                    INSERT INTO core_songs (
-                        spotify_uri, track_name, artist_name, artist_id,
-                        album_name, album_id, album_type, album_uri,
-                        release_date, release_date_precision,
-                        duration_ms, is_explicit,
-                        image_url, preview_url, popularity, is_local
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, (
-                    uri, metadata["track_name"], metadata["artist_name"], metadata["artist_id"],
-                    metadata["album_name"], metadata["album_id"], metadata["album_type"], metadata["album_uri"],
-                    metadata["release_date"], metadata["release_date_precision"],
-                    metadata["duration_ms"], metadata["is_explicit"],
-                    metadata["image_url"], metadata["preview_url"],
-                    metadata["popularity"], metadata["is_local"]
-                ))
-                song_id = cursor.lastrowid
+            # Song check or insert
+            cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri=%s", (track_uri,))
+            song_row = cursor.fetchone()
+
+            if song_row:
+                song_id = song_row[0]
             else:
-                song_id = song[0]
-
-            cursor.execute("""
-                INSERT INTO usage_logs (
-                    user_id, song_id, ts, ms_played, platform, conn_country, ip_addr,
-                    spotify_track_uri, episode_name, episode_show_name, reason_start,
-                    reason_end, shuffle, skipped, offline, offline_timestamp, incognito_mode
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                user_id, song_id, datetime.fromisoformat(ts.replace("Z", "+00:00")),
-                stream.get("ms_played"), stream.get("platform"), stream.get("conn_country"),
-                stream.get("ip_addr"), uri, stream.get("episode_name"),
-                stream.get("episode_show_name"), stream.get("reason_start"),
-                stream.get("reason_end"), stream.get("shuffle"), stream.get("skipped"),
-                stream.get("offline"), stream.get("offline_timestamp"), stream.get("incognito_mode")
-            ))
-
-            inserted += 1
-
-            if index % 10 == 0:
-                self.update_state(
-                    state="PROGRESS",
-                    meta={
-                        "inserted": inserted,
-                        "processed": index,
-                        "total": total,
-                        "progress_pct": int(index / total * 100)
-                    }
+                metadata = sp.track(track_uri)
+                cursor.execute(
+                    "INSERT INTO core_songs (spotify_uri, title, artist) VALUES (%s, %s, %s)",
+                    (track_uri, metadata["name"], metadata["artists"][0]["name"])
                 )
+                song_id = cursor.lastrowid
+
+            # Insert usage log
+            cursor.execute(
+                "INSERT INTO usage_logs (user_id, song_id, ts, ms_played) VALUES (%s, %s, %s, %s)",
+                (user_id, song_id, ts.to_datetime_string(), ms_played)
+            )
+            inserted += 1
 
         conn.commit()
         cursor.close()
         conn.close()
 
-        return {'status': 'success', 'inserted': inserted, 'total': total}
+        return {"status": "COMPLETE", "inserted": inserted}
 
     except Exception as e:
         self.update_state(
-            state='FAILURE',
-            meta={
-                'exc_type': type(e).__name__,
-                'exc_message': str(e),
-                'exc_module': e.__class__.__module__,
-            }
+            state="FAILURE",
+            meta={"msg": str(e), "error_type": e.__class__.__name__}
         )
         raise Ignore()
 
