@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from flask_cors import CORS
-from celery.result import AsyncResult
-from celery_app import celery
+from flask_rq2 import RQ
+from rq.job import Job
+from redis import Redis
 from tasks import process_spotify_json_file, update_user_snapshots
 import mysql.connector.pooling
 from datetime import datetime
@@ -35,6 +36,9 @@ ucpignGsRTOVhSwDZ+q0OmEmDD8Halv0RWeEMAPHBMLxiLuLTm6U3gN9IEbMo6nU
 vwIDAQAB
 -----END PUBLIC KEY-----
 """
+
+app.config['RQ_REDIS_URL'] = 'redis://localhost:6379/0'
+rq = RQ(app)
 
 jwt = JWTManager(app)
 
@@ -79,29 +83,20 @@ def db_status():
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
-@app.route("/api/task-status/<task_id>")
-def task_status(task_id):
+@app.route("/api/job-status/<job_id>")
+def job_status(job_id):
     try:
-        result = celery.AsyncResult(task_id)
+        conn = Redis.from_url(app.config['RQ_REDIS_URL'])
+        job = Job.fetch(job_id, connection=conn)
 
-        response = {
-            "task_id": task_id,
-            "status": result.status,
-        }
-
-        if result.status == "SUCCESS":
-            response["result"] = result.result
-        elif result.status == "FAILURE":
-            response["error"] = str(result.result)
-
-        return jsonify(response)
-
-    except Exception as e:
-        app.logger.error(f"Error fetching task status for {task_id}", exc_info=True)
         return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+            "job_id": job.id,
+            "status": job.get_status(),
+            "result": job.result,
+            "error": job.exc_info if job.is_failed else None,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/users/sync', methods=['POST'])
 def sync_user():
@@ -139,17 +134,14 @@ def upload_spotify_json():
     if file.filename == '' or not file.filename.endswith('.json'):
         return jsonify({"error": "Invalid file"}), 400
 
-    # Save uploaded file to temp folder
-    upload_dir = "uploads"
-    os.makedirs(upload_dir, exist_ok=True)
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     unique_filename = f"{uuid.uuid4()}.json"
-    filepath = os.path.join(upload_dir, unique_filename)
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
     file.save(filepath)
 
-    # Launch celery task
-    task = process_spotify_json_file.delay(filepath, auth0_id)
+    job = rq.get_queue().enqueue(process_spotify_json_file, filepath, auth0_id)
 
-    return jsonify({"status": "processing", "task_id": task.id}), 202
+    return jsonify({"status": "queued", "job_id": job.id}), 202
 
 @app.route("/api/snapshots/generate", methods=["POST"])
 @jwt_required()
@@ -160,10 +152,8 @@ def generate_snapshots():
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
-    # Trigger the task for only the requesting user
-    task = update_user_snapshots.apply_async(args=[user_id])
-
-    return jsonify({"status": "started", "task_id": task.id}), 202
+    job = rq.get_queue().enqueue(update_user_snapshots, user_id)
+    return jsonify({"status": "started", "job_id": job.id}), 202
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
