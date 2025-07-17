@@ -1,6 +1,5 @@
 import json
 import pendulum
-from celery_app import celery
 from spotify_client import sp
 import mysql.connector.pooling
 import requests
