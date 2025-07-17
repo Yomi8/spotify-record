@@ -5,7 +5,6 @@ import mysql.connector.pooling
 import requests
 import os
 from dotenv import load_dotenv
-from celery.exceptions import Ignore
 
 load_dotenv()
 
