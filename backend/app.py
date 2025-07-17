@@ -126,6 +126,11 @@ def sync_user():
 @jwt_required()
 def upload_spotify_json():
     auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id) 
+
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
+
 
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
@@ -139,7 +144,7 @@ def upload_spotify_json():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
     file.save(filepath)
 
-    job = rq.get_queue().enqueue(process_spotify_json_file, filepath, auth0_id)
+    job = rq.get_queue().enqueue(process_spotify_json_file, filepath, user_id)
 
     return jsonify({"status": "queued", "job_id": job.id}), 202
 
