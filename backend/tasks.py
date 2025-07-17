@@ -46,59 +46,120 @@ def get_spotify_metadata(uri):
             "is_local": track.get("is_local", False)
         }
     except Exception as e:
-        print(f"Error fetching track metadata: {e}")
+        print(f"Error fetching track metadata for URI {uri}: {e}")
         return None
 
 def process_spotify_json_file(file_path, user_id):
-    with open(file_path, "r") as f:
-        data = json.load(f)
+    try:
+        with open(file_path, "r") as f:
+            data = json.load(f)
 
-    if not isinstance(data, list):
-        raise ValueError("Invalid JSON structure")
+        if not isinstance(data, list):
+            raise ValueError("Invalid JSON structure: expected a list")
 
-    inserted = 0
-    conn = db_pool.get_connection()
-    cursor = conn.cursor()
+        inserted = 0
+        conn = db_pool.get_connection()
+        cursor = conn.cursor()
 
-    for entry in data:
-        ts = pendulum.parse(entry["ts"])
-        ms_played = entry.get("ms_played", 0)
-        track_uri = entry.get("spotify_track_uri")
+        total = len(data)
+        for index, entry in enumerate(data):
+            # Progress logging (optional)
+            print(f"Processing entry {index + 1} of {total}, inserted so far: {inserted}")
 
-        if not track_uri:
-            continue
+            ts_str = entry.get("ts")
+            track_uri = entry.get("spotify_track_uri")
+            if not ts_str or not track_uri:
+                continue
 
-        cursor.execute(
-            "SELECT 1 FROM usage_logs WHERE user_id=%s AND ts=%s",
-            (user_id, ts.to_datetime_string())
-        )
-        if cursor.fetchone():
-            continue
+            try:
+                ts = pendulum.parse(ts_str).to_datetime_string()
+            except Exception:
+                continue
 
-        cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri=%s", (track_uri,))
-        song_row = cursor.fetchone()
-
-        if song_row:
-            song_id = song_row[0]
-        else:
-            metadata = sp.track(track_uri)
+            # Check for duplicate usage log
             cursor.execute(
-                "INSERT INTO core_songs (spotify_uri, title, artist) VALUES (%s, %s, %s)",
-                (track_uri, metadata["name"], metadata["artists"][0]["name"])
+                "SELECT 1 FROM usage_logs WHERE user_id = %s AND ts = %s",
+                (user_id, ts)
             )
-            song_id = cursor.lastrowid
+            if cursor.fetchone():
+                continue
 
-        cursor.execute(
-            "INSERT INTO usage_logs (user_id, song_id, ts, ms_played) VALUES (%s, %s, %s, %s)",
-            (user_id, song_id, ts.to_datetime_string(), ms_played)
-        )
-        inserted += 1
+            cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri = %s", (track_uri,))
+            song_row = cursor.fetchone()
 
-    conn.commit()
-    cursor.close()
-    conn.close()
+            if song_row:
+                song_id = song_row[0]
+            else:
+                metadata = get_spotify_metadata(track_uri)
+                if not metadata:
+                    continue
 
-    return {"inserted": inserted}
+                cursor.execute("""
+                    INSERT INTO core_songs (
+                        spotify_uri, track_name, artist_name, artist_id,
+                        album_name, album_id, album_type, album_uri,
+                        release_date, release_date_precision,
+                        duration_ms, is_explicit,
+                        image_url, preview_url, popularity, is_local
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    track_uri,
+                    metadata["track_name"],
+                    metadata["artist_name"],
+                    metadata["artist_id"],
+                    metadata["album_name"],
+                    metadata["album_id"],
+                    metadata["album_type"],
+                    metadata["album_uri"],
+                    metadata["release_date"],
+                    metadata["release_date_precision"],
+                    metadata["duration_ms"],
+                    int(metadata["is_explicit"]),
+                    metadata["image_url"],
+                    metadata["preview_url"],
+                    metadata["popularity"],
+                    int(metadata["is_local"]),
+                ))
+                song_id = cursor.lastrowid
+
+            cursor.execute("""
+                INSERT INTO usage_logs (
+                    user_id, song_id, ts, ms_played, platform, conn_country, ip_addr,
+                    spotify_track_uri, episode_name, episode_show_name, reason_start,
+                    reason_end, shuffle, skipped, offline, offline_timestamp, incognito_mode
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                user_id,
+                song_id,
+                ts,
+                entry.get("ms_played"),
+                entry.get("platform"),
+                entry.get("conn_country"),
+                entry.get("ip_addr"),
+                track_uri,
+                entry.get("episode_name"),
+                entry.get("episode_show_name"),
+                entry.get("reason_start"),
+                entry.get("reason_end"),
+                entry.get("shuffle"),
+                entry.get("skipped"),
+                entry.get("offline"),
+                entry.get("offline_timestamp"),
+                entry.get("incognito_mode"),
+            ))
+
+            inserted += 1
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return {"status": "COMPLETE", "inserted": inserted, "total": total}
+
+    except Exception as e:
+        # Log error and re-raise for visibility
+        print(f"Error in process_spotify_json_file: {e}")
+        raise
 
 def update_user_snapshots(user_id=None):
     conn = db_pool.get_connection()
