@@ -6,7 +6,6 @@ const JSONUpload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
-  const [progress, setProgress] = useState<number | null>(null);
   const [result, setResult] = useState<any>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,13 +36,12 @@ const JSONUpload = () => {
       if (res.status === 202 && json.task_id) {
         setTaskId(json.task_id);
         setStatus("Processing...");
-        setProgress(null);
         setResult(null);
       } else {
         setStatus(`Error: ${json.error || "Unknown error"}`);
       }
     } catch (err) {
-      setStatus(`Upload failed: ${err}`);
+      setStatus(`Upload failed: ${(err as Error).message}`);
       console.error(err);
     }
   };
@@ -53,49 +51,63 @@ const JSONUpload = () => {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`https://yomi16.nz/api/task-status/${taskId}`);
+        const res = await fetch(`https://yomi16.nz/api/job-status/${taskId}`);
         const data = await res.json();
 
-        setStatus(data.status);
-        if (data.progress?.progress_pct != null) {
-          setProgress(data.progress.progress_pct);
+        if (res.status !== 200) {
+          throw new Error(data.error || "Unknown error");
         }
 
-        if (data.status === "SUCCESS" || data.status === "FAILURE") {
+        const jobStatus = data.status;
+        setStatus(jobStatus);
+
+        if (jobStatus === "finished") {
           clearInterval(interval);
-          setResult(data.result || data.progress || {});
+          setResult(data.result);
+        } else if (jobStatus === "failed") {
+          clearInterval(interval);
+          setResult({ error: data.error || "Task failed" });
         }
       } catch (err) {
         console.error("Polling error:", err);
         clearInterval(interval);
-        setStatus("Error polling status.");
+        setStatus("Error polling job status.");
+        setResult({ error: (err as Error).message });
       }
     }, 3000);
 
     return () => clearInterval(interval);
   }, [taskId]);
 
-  if (!isAuthenticated) return <p>Please log in to upload your data.</p>;
+  if (!isAuthenticated) {
+    return <p className="text-danger">Please log in to upload your data.</p>;
+  }
 
   return (
     <div className="text-white p-4">
       <h3 className="text-xl mb-2">Upload your Spotify JSON file</h3>
+
       <input
         type="file"
         accept=".json"
         onChange={handleChange}
         className="form-control my-2"
       />
-      <button onClick={handleUpload} className="btn btn-success">
+
+      <button
+        onClick={handleUpload}
+        className="btn btn-success"
+        disabled={!file}
+      >
         Upload
       </button>
 
       {status && <p className="mt-4 text-info">Status: {status}</p>}
-      {progress !== null && <p className="mt-2">Progress: {progress}%</p>}
+
       {result && (
         <div className="mt-3">
-          <h4>Result</h4>
-          <pre className="bg-dark p-2 rounded text-white">
+          <h4 className="text-lg">{result.error ? "Error" : "Result"}</h4>
+          <pre className="bg-dark p-2 rounded text-white overflow-auto">
             {JSON.stringify(result, null, 2)}
           </pre>
         </div>
