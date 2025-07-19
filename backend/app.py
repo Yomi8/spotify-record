@@ -180,7 +180,8 @@ def generate_snapshots():
     if period not in {"day", "week", "month", "year", "lifetime"}:
         return jsonify({"error": "Invalid period type"}), 400
 
-    job = rq.get_queue(generate_snapshot_for_period, user_id, period)
+    queue = rq.get_queue()  # get default queue
+    job = queue.enqueue(generate_snapshot_for_period, user_id, period)
     return jsonify({"status": "started", "job_id": job.id}), 202
 
 # Generate custom snapshot for a specific date range
@@ -207,7 +208,7 @@ def generate_custom_snapshot():
         return jsonify({"error": f"Invalid datetime format: {str(e)}"}), 400
 
     queue = rq.get_queue()
-    job = queue(generate_snapshot_for_range, user_id, start_dt, end_dt)
+    job = queue.enqueue(generate_snapshot_for_range, user_id, start_dt, end_dt)
     return jsonify({"status": "started", "job_id": job.id}), 202
 
 if __name__ == "__main__":
