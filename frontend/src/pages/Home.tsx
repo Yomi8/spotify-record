@@ -94,7 +94,15 @@ export default function Home() {
                   <p><strong>Total Plays:</strong> {stats.total_plays}</p>
                   <p><strong>Top Song:</strong> {stats.most_played_song}</p>
                   <p><strong>Top Artist:</strong> {stats.most_played_artist}</p>
-                  <p><strong>Longest Binge:</strong> {stats.longest_binge}</p>
+                  {stats.most_played_song_image_url && (
+                    <img src={stats.most_played_song_image_url} alt="Top Song Cover" style={{width: 64, height: 64}} />
+                  )}
+
+                  <p><strong>Longest Binge Song:</strong> {stats.longest_binge_song}</p>
+                  <p><strong>Binge Artist:</strong> {stats.longest_binge_artist}</p>
+                  {stats.longest_binge_song_image_url && (
+                    <img src={stats.longest_binge_song_image_url} alt="Binge Song Cover" style={{width: 64, height: 64}} />
+                  )}
                 </div>
               )}
             </div>

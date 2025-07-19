@@ -171,12 +171,13 @@ def upload_spotify_json():
     return jsonify({"status": "queued", "job_id": job.id}), 202
 
 def enrich_snapshot(snapshot):
-    # Get song name
+    # Most played song
     song_name = None
     artist_name = None
+    image_url = None
     if snapshot.get("most_played_song_id"):
         song_row = run_query(
-            "SELECT track_name, artist_name FROM core_songs WHERE song_id = %s",
+            "SELECT track_name, artist_name, image_url FROM core_songs WHERE song_id = %s",
             (snapshot["most_played_song_id"],),
             fetchone=True,
             dict_cursor=True
@@ -184,9 +185,32 @@ def enrich_snapshot(snapshot):
         if song_row:
             song_name = song_row["track_name"]
             artist_name = song_row["artist_name"]
+            image_url = song_row["image_url"]
 
     snapshot["most_played_song"] = song_name
     snapshot["most_played_artist"] = artist_name
+    snapshot["most_played_song_image_url"] = image_url
+
+    # Binge song
+    binge_song_name = None
+    binge_artist_name = None
+    binge_image_url = None
+    if snapshot.get("longest_binge_song_id"):
+        binge_row = run_query(
+            "SELECT track_name, artist_name, image_url FROM core_songs WHERE song_id = %s",
+            (snapshot["longest_binge_song_id"],),
+            fetchone=True,
+            dict_cursor=True
+        )
+        if binge_row:
+            binge_song_name = binge_row["track_name"]
+            binge_artist_name = binge_row["artist_name"]
+            binge_image_url = binge_row["image_url"]
+
+    snapshot["longest_binge_song"] = binge_song_name
+    snapshot["longest_binge_artist"] = binge_artist_name
+    snapshot["longest_binge_song_image_url"] = binge_image_url
+
     return snapshot
 
 # Generate pre-defined snapshots
