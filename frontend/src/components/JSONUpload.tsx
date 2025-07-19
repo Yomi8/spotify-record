@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 const JSONUpload = () => {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
   const [file, setFile] = useState<File | null>(null);
-  const [taskId, setTaskId] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
 
@@ -33,8 +33,8 @@ const JSONUpload = () => {
 
       const json = await res.json();
 
-      if (res.status === 202 && json.task_id) {
-        setTaskId(json.task_id);
+      if (res.status === 202 && json.job_id) {
+        setJobId(json.job_id);
         setStatus("Processing...");
         setResult(null);
       } else {
@@ -47,16 +47,16 @@ const JSONUpload = () => {
   };
 
   useEffect(() => {
-    if (!taskId) return;
-  
+    if (!jobId) return;
+
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`https://yomi16.nz/api/job-status/${taskId}`);
+        const res = await fetch(`https://yomi16.nz/api/job-status/${jobId}`);
         const data = await res.json();
-      
+
         const jobStatus = data.status;
         setStatus(jobStatus);
-      
+
         if (jobStatus === "finished") {
           clearInterval(interval);
           setResult(data.result);
@@ -71,9 +71,9 @@ const JSONUpload = () => {
         setResult({ error: (err as Error).message });
       }
     }, 3000);
-  
+
     return () => clearInterval(interval);
-  }, [taskId]);
+  }, [jobId]);
 
   if (!isAuthenticated) {
     return <p className="text-danger">Please log in to upload your data.</p>;
