@@ -278,26 +278,41 @@ def get_snapshot_data(cursor, user_id, start, end):
 def generate_snapshot_for_period(user_id, period):
     redis_key = f"snapshot_job:{user_id}:{period}"
     try:
-        # Calculate snapshot_time
+        # Set Redis flag to mark snapshot generation in progress, expire after 10 mins
+        redis_conn.set(redis_key, "1", ex=600)
+
         now = pendulum.now()
 
-        stats = {
+        # Determine time range for snapshot data
+        if period == "lifetime":
+            conn = db_pool.get_connection()
+            try:
+                with conn.cursor(dictionary=True) as cursor:
+                    start, end = get_user_lifetime_range(cursor, user_id)
+                    if not start or not end:
+                        print(f"No usage logs for user {user_id}, skipping lifetime snapshot")
+                        return
+            finally:
+                conn.close()
+        else:
+            start, end = get_range_bounds(now, period)
+
+        # Fetch snapshot stats for the user and range
+        stats = get_snapshot_data(user_id, period, start, end)
+
+        # Add snapshot time and user/period info to stats
+        stats.update({
             "user_id": user_id,
             "range_type": period,
             "snapshot_time": now.to_datetime_string(),
-            "total_plays": 123,  # replace with real values
-            "most_played_song": "Some Song",
-            "most_played_artist": "Some Artist",
-            "longest_binge": 456,
-        }
-        stats = get_snapshot_data(user_id, period)
+        })
 
+        # Insert snapshot into DB
         query = """
             INSERT INTO user_snapshots (
                 user_id, range_type, snapshot_time,
                 total_plays, most_played_song, most_played_artist, longest_binge
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         run_query(
             query,
@@ -310,10 +325,16 @@ def generate_snapshot_for_period(user_id, period):
                 stats["most_played_artist"],
                 stats["longest_binge"],
             ),
-            commit=True
+            commit=True,
         )
+        print(f"Snapshot generated for user {user_id} ({period}) at {stats['snapshot_time']}")
+
+    except Exception as e:
+        print(f"Error generating snapshot for user {user_id} ({period}): {e}")
+        raise
+
     finally:
-        # Ensure Redis flag is removed after generation finishes
+        # Remove Redis flag regardless of success or failure
         redis_conn.delete(redis_key)
 
 # 2. Custom Range Snapshot (API input or manual)
