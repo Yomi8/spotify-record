@@ -17,7 +17,7 @@ export default function Settings() {
       const token = await getAccessTokenSilently();
 
       // Example: generate snapshots for day, week, and year periods
-      const periodsToGenerate = ["day", "week", "year"];
+      const periodsToGenerate = ["day", "week", "year", "lifetime"];
 
       const res = await fetch("/api/snapshots/generate", {
         method: "POST",
