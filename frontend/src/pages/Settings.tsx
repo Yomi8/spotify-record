@@ -14,8 +14,10 @@ export default function Settings() {
       const res = await fetch("/api/snapshots/generate", {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({}) 
       });
 
       if (!res.ok) throw new Error("Failed to start snapshot generation");
