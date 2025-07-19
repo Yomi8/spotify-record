@@ -233,41 +233,50 @@ def get_latest_snapshot(period):
     user_id = get_user_id_from_auth0(auth0_id)
 
     redis_key = f"snapshot_job:{user_id}:{period}"
-
     now = pendulum.now()
 
-    # Always check for a fresh snapshot first
-    try:
-        snapshot = run_query(
-            """
-            SELECT *
-            FROM user_snapshots
-            WHERE user_id = %s AND range_type = %s
-            ORDER BY snapshot_time DESC
-            LIMIT 1
-            """,
-            (user_id, period),
-            fetchone=True,
-            dict_cursor=True,
-        )
-    except Exception as e:
-        print(f"Error fetching snapshot: {e}")
-        return jsonify({"error": "Database error"}), 500
+    def fetch_snapshot():
+        try:
+            snapshot = run_query(
+                """
+                SELECT *
+                FROM user_snapshots
+                WHERE user_id = %s AND range_type = %s
+                ORDER BY snapshot_time DESC
+                LIMIT 1
+                """,
+                (user_id, period),
+                fetchone=True,
+                dict_cursor=True,
+            )
+            return snapshot
+        except Exception as e:
+            print(f"Error fetching snapshot: {e}")
+            return None
 
+    # 1. Check for a fresh snapshot first
+    snapshot = fetch_snapshot()
     if snapshot:
         snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
         age_minutes = now.diff(snapshot_time).in_minutes()
         if age_minutes < 10:
-            # Snapshot is fresh, return it
             redis_conn.delete(redis_key)
             return jsonify({"snapshot": snapshot}), 200
 
-    # If no fresh snapshot, check if job is running
+    # 2. If no fresh snapshot, check if job is running
     if redis_conn.exists(redis_key):
+        # RE-CHECK for a fresh snapshot in case the job just finished
+        snapshot = fetch_snapshot()
+        if snapshot:
+            snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
+            age_minutes = now.diff(snapshot_time).in_minutes()
+            if age_minutes < 10:
+                redis_conn.delete(redis_key)
+                return jsonify({"snapshot": snapshot}), 200
         # Job is in progress, tell client to wait
         return jsonify({"message": "Snapshot generation in progress"}), 202
 
-    # No job running, start job
+    # 3. No job running, start job
     redis_conn.set(redis_key, "1", ex=600)  # expire in 10 mins
     queue = rq.get_queue()
     job = queue.enqueue(generate_snapshot_for_period, user_id, period)
