@@ -79,15 +79,53 @@ const JSONUpload = () => {
     return <p className="text-danger">Please log in to upload your data.</p>;
   }
 
+  const renderResult = () => {
+    if (!result) return null;
+
+    if (result.error) {
+      return (
+        <div className="alert alert-danger mt-3">
+          <strong>Error:</strong> {result.error}
+        </div>
+      );
+    }
+
+    return (
+      <div className="card bg-dark text-white mt-3">
+        <div className="card-body">
+          <h5 className="card-title">Upload Complete</h5>
+          <table className="table table-sm table-dark table-bordered mb-0">
+            <tbody>
+              <tr>
+                <th scope="row">Status</th>
+                <td className={result.status === "COMPLETE" ? "text-success" : "text-warning"}>
+                  {result.status}
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Inserted</th>
+                <td>{result.inserted}</td>
+              </tr>
+              <tr>
+                <th scope="row">Total</th>
+                <td>{result.total}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="text-white p-4">
-      <h3 className="text-xl mb-2">Upload your Spotify JSON file</h3>
+      <h3 className="text-xl mb-3">Upload your Spotify JSON file</h3>
 
       <input
         type="file"
         accept=".json"
         onChange={handleChange}
-        className="form-control my-2"
+        className="form-control mb-2"
       />
 
       <button
@@ -98,16 +136,26 @@ const JSONUpload = () => {
         Upload
       </button>
 
-      {status && <p className="mt-4 text-info">Status: {status}</p>}
-
-      {result && (
+      {status && (
         <div className="mt-3">
-          <h4 className="text-lg">{result.error ? "Error" : "Result"}</h4>
-          <pre className="bg-dark p-2 rounded text-white overflow-auto">
-            {JSON.stringify(result, null, 2)}
-          </pre>
+          <span className="fw-bold">Status: </span>
+          <span
+            className={
+              status === "finished"
+                ? "text-success"
+                : status === "failed"
+                ? "text-danger"
+                : status === "Processing..."
+                ? "text-warning"
+                : "text-info"
+            }
+          >
+            {status}
+          </span>
         </div>
       )}
+
+      {renderResult()}
     </div>
   );
 };
