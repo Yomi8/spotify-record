@@ -251,17 +251,17 @@ def get_latest_snapshot(period):
             )
             return snapshot
         except Exception as e:
-            print(f"Error fetching snapshot: {e}")
+            print(f"Error fetching snapshot: {e}", flush=True)
             return None
 
     # 1. Check for a fresh snapshot first
     snapshot = fetch_snapshot()
-    print(f"DEBUG: Initial snapshot fetch result: {snapshot}")  # Add this line
+    print(f"DEBUG: Initial snapshot fetch result: {snapshot}", flush=True)  # Add flush=True
     if snapshot:
         snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
-        print(f"DEBUG: snapshot_time={snapshot_time}, now={now}")
+        print(f"DEBUG: snapshot_time={snapshot_time}, now={now}", flush=True)
         age_minutes = now.diff(snapshot_time).in_minutes()
-        print(f"DEBUG: age_minutes={age_minutes}")
+        print(f"DEBUG: age_minutes={age_minutes}", flush=True)
         if age_minutes < 10:
             redis_conn.delete(redis_key)
             return jsonify({"snapshot": snapshot}), 200
@@ -269,12 +269,12 @@ def get_latest_snapshot(period):
     # 2. If no fresh snapshot, check if job is running
     if redis_conn.exists(redis_key):
         snapshot = fetch_snapshot()
-        print(f"DEBUG: Redis exists, snapshot fetch result: {snapshot}")  # Add this line
+        print(f"DEBUG: Redis exists, snapshot fetch result: {snapshot}", flush=True)  # Add flush=True
         if snapshot:
             snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
-            print(f"DEBUG: snapshot_time={snapshot_time}, now={now}")
+            print(f"DEBUG: snapshot_time={snapshot_time}, now={now}", flush=True)
             age_minutes = now.diff(snapshot_time).in_minutes()
-            print(f"DEBUG: age_minutes={age_minutes}")
+            print(f"DEBUG: age_minutes={age_minutes}", flush=True)
             if age_minutes < 10:
                 redis_conn.delete(redis_key)
                 return jsonify({"snapshot": snapshot}), 200
