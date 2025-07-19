@@ -256,17 +256,20 @@ def get_latest_snapshot(period):
 
     # 1. Check for a fresh snapshot first
     snapshot = fetch_snapshot()
+    print(f"DEBUG: Initial snapshot fetch result: {snapshot}")  # Add this line
     if snapshot:
         snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
+        print(f"DEBUG: snapshot_time={snapshot_time}, now={now}")
         age_minutes = now.diff(snapshot_time).in_minutes()
+        print(f"DEBUG: age_minutes={age_minutes}")
         if age_minutes < 10:
             redis_conn.delete(redis_key)
             return jsonify({"snapshot": snapshot}), 200
 
     # 2. If no fresh snapshot, check if job is running
     if redis_conn.exists(redis_key):
-        # RE-CHECK for a fresh snapshot in case the job just finished
         snapshot = fetch_snapshot()
+        print(f"DEBUG: Redis exists, snapshot fetch result: {snapshot}")  # Add this line
         if snapshot:
             snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
             print(f"DEBUG: snapshot_time={snapshot_time}, now={now}")
@@ -275,7 +278,6 @@ def get_latest_snapshot(period):
             if age_minutes < 10:
                 redis_conn.delete(redis_key)
                 return jsonify({"snapshot": snapshot}), 200
-        # Job is in progress, tell client to wait
         return jsonify({"message": "Snapshot generation in progress"}), 202
 
     # 3. No job running, start job
