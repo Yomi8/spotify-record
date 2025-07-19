@@ -233,7 +233,7 @@ def get_latest_snapshot(period):
     user_id = get_user_id_from_auth0(auth0_id)
 
     redis_key = f"snapshot_job:{user_id}:{period}"
-    now = pendulum.now()
+    now = pendulum.now("UTC")
 
     def fetch_snapshot():
         try:
