@@ -259,7 +259,7 @@ def get_latest_lifetime_snapshot():
         return jsonify({"message": "Snapshot generation in progress"}), 202
 
     # Otherwise, mark job as started and enqueue
-    redis_conn.set(redis_key, "1", ex=300)  # expires after 5 minutes
+    redis_conn.set(redis_key, "1", ex=5)  # expires after 5 seconds
     queue = rq.get_queue()
     job = queue.enqueue(generate_snapshot_for_period, user_id, "lifetime")
 
