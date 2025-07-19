@@ -10,20 +10,31 @@ export default function Settings() {
     setSnapshotStatus("Starting snapshot generation...");
     try {
       const token = await getAccessTokenSilently();
-
+    
+      // Example: generate snapshots for day, week, and year periods
+      const periodsToGenerate = ["day", "week", "year"];
+    
       const res = await fetch("/api/snapshots/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({}) 
+        body: JSON.stringify({ periods: periodsToGenerate }),
       });
-
+    
       if (!res.ok) throw new Error("Failed to start snapshot generation");
-
+    
       const data = await res.json();
-      setSnapshotStatus(`Snapshot generation started (task ID: ${data.task_id})`);
+    
+      if (data.jobs && data.jobs.length > 0) {
+        const jobsInfo = data.jobs
+          .map(job => `Period: ${job.period}, Task ID: ${job.job_id}`)
+          .join("\n");
+        setSnapshotStatus(`Snapshot generation started for:\n${jobsInfo}`);
+      } else {
+        setSnapshotStatus("Snapshot generation started.");
+      }
     } catch (err) {
       console.error(err);
       setSnapshotStatus("Error starting snapshot generation. Please try again.");

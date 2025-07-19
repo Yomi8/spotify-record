@@ -176,13 +176,24 @@ def generate_snapshots():
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
-    period = request.json.get("period", "day")
-    if period not in {"day", "week", "month", "year", "lifetime"}:
-        return jsonify({"error": "Invalid period type"}), 400
+    periods = request.json.get("periods")  # expecting a list, e.g. ["day", "year"]
+    if not periods:
+        return jsonify({"error": "Missing 'periods' in request body"}), 400
 
-    queue = rq.get_queue()  # get default queue
-    job = queue.enqueue(generate_snapshot_for_period, user_id, period)
-    return jsonify({"status": "started", "job_id": job.id}), 202
+    valid_periods = {"day", "week", "month", "year", "lifetime"}
+
+    # Validate input periods
+    invalid_periods = [p for p in periods if p not in valid_periods]
+    if invalid_periods:
+        return jsonify({"error": f"Invalid period types: {invalid_periods}"}), 400
+
+    queue = rq.get_queue()
+    jobs = []
+    for period in periods:
+        job = queue.enqueue(generate_snapshot_for_period, user_id, period)
+        jobs.append({"period": period, "job_id": job.id})
+
+    return jsonify({"status": "started", "jobs": jobs}), 202
 
 # Generate custom snapshot for a specific date range
 @app.route("/api/snapshots/generate/custom", methods=["POST"])
