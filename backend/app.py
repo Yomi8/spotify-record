@@ -211,6 +211,8 @@ def enrich_snapshot(snapshot):
     snapshot["longest_binge_artist"] = binge_artist_name
     snapshot["longest_binge_song_image_url"] = binge_image_url
 
+    snapshot["total_plays"] = snapshot.get("total_songs_played")
+
     return snapshot
 
 # Generate pre-defined snapshots
