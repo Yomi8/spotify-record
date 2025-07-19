@@ -6,7 +6,7 @@ from rq import queue
 import pendulum
 from rq.job import Job
 from redis import Redis
-from tasks import process_spotify_json_file, update_user_snapshots
+from tasks import process_spotify_json_file, generate_snapshot_for_period, generate_snapshot_for_range
 import mysql.connector.pooling
 from datetime import datetime
 import requests
