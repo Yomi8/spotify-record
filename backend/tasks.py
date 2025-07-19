@@ -298,28 +298,40 @@ def generate_snapshot_for_period(user_id, period):
                     "user_id": user_id,
                     "range_type": period,
                     "snapshot_time": now.to_datetime_string(),
-                    "total_plays": stats["total_songs"],
-                    "most_played_song": stats["top_song"],
-                    "most_played_artist": stats["top_artist"],
-                    "longest_binge": stats["binge_count"],
+                    "total_songs_played": stats["total_songs"],
+                    "most_played_song_id": stats.get("top_song_id"),
+                    "most_played_artist_name": stats.get("top_artist"),
+                    "longest_binge_song_id": stats.get("binge_song_id"),
+                    "binge_count": stats.get("binge_count"),
+                    "binge_start_ts": stats.get("binge_start_ts"),
+                    "binge_end_ts": stats.get("binge_end_ts"),
+                    "range_start": start.to_datetime_string(),
+                    "range_end": end.to_datetime_string(),
                 }
 
                 query = """
                     INSERT INTO user_snapshots (
-                        user_id, range_type, snapshot_time,
-                        total_plays, most_played_song, most_played_artist, longest_binge
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        user_id, total_songs_played, most_played_song_id, 
+                        most_played_artist_name, longest_binge_song_id, binge_count,
+                        snapshot_time, binge_start_ts, binge_end_ts,
+                        range_start, range_end, range_type
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 run_query(
                     query,
                     (
                         snapshot_data["user_id"],
-                        snapshot_data["range_type"],
+                        snapshot_data["total_songs_played"],
+                        snapshot_data["most_played_song_id"],
+                        snapshot_data["most_played_artist_name"],
+                        snapshot_data["longest_binge_song_id"],
+                        snapshot_data["binge_count"],
                         snapshot_data["snapshot_time"],
-                        snapshot_data["total_plays"],
-                        snapshot_data["most_played_song"],
-                        snapshot_data["most_played_artist"],
-                        snapshot_data["longest_binge"],
+                        snapshot_data["binge_start_ts"],
+                        snapshot_data["binge_end_ts"],
+                        snapshot_data["range_start"],
+                        snapshot_data["range_end"],
+                        snapshot_data["range_type"],
                     ),
                     commit=True,
                 )
@@ -333,7 +345,7 @@ def generate_snapshot_for_period(user_id, period):
     finally:
         redis_conn.delete(redis_key)
         print(f"Snapshot generation complete for user {user_id} period {period}")
-
+        
 # 2. Custom Range Snapshot (API input or manual)
 def generate_snapshot_for_range(user_id, start, end):
     conn = db_pool.get_connection()
