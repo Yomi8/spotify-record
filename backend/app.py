@@ -225,7 +225,8 @@ def generate_custom_snapshot():
 @app.route('/api/snapshots/lifetime/latest', methods=['GET'])
 @jwt_required()
 def get_latest_lifetime_snapshot():
-    user_id = get_jwt_identity()
+    auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id)
 
     query = """
         SELECT * FROM user_snapshots
