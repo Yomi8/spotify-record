@@ -226,42 +226,54 @@ def generate_custom_snapshot():
     job = queue.enqueue(generate_snapshot_for_range, user_id, start_dt, end_dt)
     return jsonify({"status": "started", "job_id": job.id}), 202
 
-@app.route('/api/snapshots/lifetime/latest', methods=['GET'])
+@app.route('/api/snapshots/<period>/latest', methods=['GET'])
 @jwt_required()
-def get_latest_lifetime_snapshot():
-    auth0_id = get_jwt_identity()
-    user_id = get_user_id_from_auth0(auth0_id)
+def get_latest_snapshot(period):
+    user_id = get_jwt_identity()
+    redis_key = f"snapshot_job:{user_id}:{period}"
 
-    redis_key = f"snapshot_job:{user_id}:lifetime"
-
-    # Check for existing snapshot
-    query = """
-        SELECT * FROM user_snapshots
-        WHERE user_id = %s AND range_type = 'lifetime'
-        ORDER BY snapshot_time DESC
-        LIMIT 1
-    """
-    snapshot = run_query(query, (user_id,), fetchone=True, dict_cursor=True)
+    # Try to get the latest snapshot from DB
+    try:
+        snapshot = run_query(
+            """
+            SELECT *
+            FROM user_snapshots
+            WHERE user_id = %s AND range_type = %s
+            ORDER BY snapshot_time DESC
+            LIMIT 1
+            """,
+            (user_id, period),
+            fetchone=True,
+            dict_cursor=True,
+        )
+    except Exception as e:
+        print(f"Error fetching snapshot: {e}")
+        return jsonify({"error": "Database error"}), 500
 
     now = pendulum.now()
 
+    # If snapshot exists, check age
     if snapshot:
         snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
         age_minutes = now.diff(snapshot_time).in_minutes()
 
         if age_minutes < 10:
-            # If fresh, return it
-            redis_conn.delete(redis_key)  # clear stale Redis flag
+            # Snapshot is fresh, return it
+            # Clear Redis job flag if any (stale flags lingering)
+            redis_conn.delete(redis_key)
             return jsonify({"snapshot": snapshot}), 200
 
-    # If not fresh, check if job already enqueued
+    # Snapshot missing or stale, check if job already running
     if redis_conn.exists(redis_key):
+        # Job is in progress, tell client to wait
         return jsonify({"message": "Snapshot generation in progress"}), 202
 
-    # Otherwise, mark job as started and enqueue
-    redis_conn.set(redis_key, "1", ex=5)  # expires after 5 seconds
+    # No job running, start job
+    redis_conn.set(redis_key, "1", ex=600)  # expire in 10 mins
+
+    # Enqueue your background job here (assuming 'queue' is your RQ queue)
     queue = rq.get_queue()
-    job = queue.enqueue(generate_snapshot_for_period, user_id, "lifetime")
+    job = queue.enqueue(generate_snapshot_for_period, user_id, period)
 
     return jsonify({
         "message": "Generating new snapshot",
