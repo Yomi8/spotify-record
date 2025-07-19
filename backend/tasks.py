@@ -184,12 +184,13 @@ def update_user_snapshots(user_id=None):
             start = now.subtract(years=1)
         else:
             raise ValueError(f"Unknown range type: {range_type}")
-    
+
         end = now  # precise to current timestamp
         return start, end
 
     def calculate_longest_binge(rows):
-        if not rows: return None, 0, None, None
+        if not rows:
+            return None, 0, None, None
 
         max_song = rows[0]['song_id']
         max_count = 1
@@ -217,10 +218,12 @@ def update_user_snapshots(user_id=None):
 
         return max_song, max_count, max_start, max_end
 
+    now = pendulum.now("UTC")
+
     for user in users:
         uid = user['user_id']
         for period in periods:
-            start, end = get_range_bounds(period)
+            start, end = get_range_bounds(now, period)
 
             cursor.execute("""
                 SELECT COUNT(*) AS total FROM usage_logs
@@ -270,4 +273,3 @@ def update_user_snapshots(user_id=None):
 
     cursor.close()
     conn.close()
-
