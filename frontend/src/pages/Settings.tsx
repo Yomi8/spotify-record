@@ -2,6 +2,11 @@ import { useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import SpotifyUpload from "../components/JSONUpload";
 
+interface SnapshotJob {
+  period: string;
+  job_id: string;
+}
+
 export default function Settings() {
   const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0();
   const [snapshotStatus, setSnapshotStatus] = useState<string | null>(null);
@@ -10,10 +15,10 @@ export default function Settings() {
     setSnapshotStatus("Starting snapshot generation...");
     try {
       const token = await getAccessTokenSilently();
-    
+
       // Example: generate snapshots for day, week, and year periods
       const periodsToGenerate = ["day", "week", "year"];
-    
+
       const res = await fetch("/api/snapshots/generate", {
         method: "POST",
         headers: {
@@ -22,14 +27,14 @@ export default function Settings() {
         },
         body: JSON.stringify({ periods: periodsToGenerate }),
       });
-    
+
       if (!res.ok) throw new Error("Failed to start snapshot generation");
-    
+
       const data = await res.json();
-    
+
       if (data.jobs && data.jobs.length > 0) {
         const jobsInfo = data.jobs
-          .map(job => `Period: ${job.period}, Task ID: ${job.job_id}`)
+          .map((job: SnapshotJob) => `Period: ${job.period}, Task ID: ${job.job_id}`)
           .join("\n");
         setSnapshotStatus(`Snapshot generation started for:\n${jobsInfo}`);
       } else {
@@ -71,7 +76,7 @@ export default function Settings() {
         >
           Generate Snapshots Now
         </button>
-        {snapshotStatus && <p className="mt-2 text-gray-700">{snapshotStatus}</p>}
+        {snapshotStatus && <p className="mt-2 text-gray-700 whitespace-pre-line">{snapshotStatus}</p>}
       </div>
     </div>
   );
