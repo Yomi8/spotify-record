@@ -173,14 +173,20 @@ def update_user_snapshots(user_id=None):
 
     periods = ['day', 'week', 'month', 'year']
 
-    def get_range_bounds(period):
-        now = pendulum.now("UTC")
-        return {
-            'day': (now.start_of('day'), now.end_of('day')),
-            'week': (now.start_of('week'), now.end_of('week')),
-            'month': (now.start_of('month'), now.end_of('month')),
-            'year': (now.start_of('year'), now.end_of('year')),
-        }[period]
+    def get_range_bounds(now: pendulum.DateTime, range_type: str):
+        if range_type == 'day':
+            start = now.subtract(days=1)
+        elif range_type == 'week':
+            start = now.subtract(weeks=1)
+        elif range_type == 'month':
+            start = now.subtract(months=1)
+        elif range_type == 'year':
+            start = now.subtract(years=1)
+        else:
+            raise ValueError(f"Unknown range type: {range_type}")
+    
+        end = now  # precise to current timestamp
+        return start, end
 
     def calculate_longest_binge(rows):
         if not rows: return None, 0, None, None
