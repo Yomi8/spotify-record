@@ -2,7 +2,7 @@ import json
 import pendulum
 from spotify_client import sp
 import mysql.connector.pooling
-import requests
+import redis
 import os
 from dotenv import load_dotenv
 
@@ -13,6 +13,8 @@ SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_TOKEN_INFO = {"access_token": None, "expires_at": 0}
 SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
 
+redis_conn = redis.Redis.from_url("redis://localhost:6379/0")
+
 # Setup MySQL connection pool (reuse same config)
 db_pool = mysql.connector.pooling.MySQLConnectionPool(
     pool_name="spotify_pool",
@@ -22,6 +24,22 @@ db_pool = mysql.connector.pooling.MySQLConnectionPool(
     password="$3000JHCpaperPC",
     database="spotifydb"
 )
+
+# Basic query execution
+def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=False):
+    conn = db_pool.get_connection()
+    try:
+        with conn.cursor(dictionary=dict_cursor) as cursor:
+            cursor.execute(query, params or ())
+            result = (
+                cursor.fetchone() if fetchone else
+                cursor.fetchall() if cursor.with_rows else None
+            )
+        if commit:
+            conn.commit()
+        return result
+    finally:
+        conn.close()
 
 def get_spotify_metadata(uri):
     track_id = uri.split(":")[-1]
@@ -290,6 +308,47 @@ def generate_snapshot_for_period(user_id, period):
     conn.close()
     return {"user_id": user_id, "range_type": period, "range_start": start, "range_end": end}
 
+
+def generate_snapshot_for_period(user_id, period):
+    redis_key = f"snapshot_job:{user_id}:{period}"
+    try:
+        # Calculate snapshot_time
+        now = pendulum.now()
+
+        stats = {
+            "user_id": user_id,
+            "range_type": period,
+            "snapshot_time": now.to_datetime_string(),
+            "total_plays": 123,  # replace with real values
+            "most_played_song": "Some Song",
+            "most_played_artist": "Some Artist",
+            "longest_binge": 456,
+        }
+        stats = get_snapshot_data(user_id, period)
+
+        query = """
+            INSERT INTO user_snapshots (
+                user_id, range_type, snapshot_time,
+                total_plays, most_played_song, most_played_artist, longest_binge
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        run_query(
+            query,
+            (
+                stats["user_id"],
+                stats["range_type"],
+                stats["snapshot_time"],
+                stats["total_plays"],
+                stats["most_played_song"],
+                stats["most_played_artist"],
+                stats["longest_binge"],
+            ),
+            commit=True
+        )
+    finally:
+        # Ensure Redis flag is removed after generation finishes
+        redis_conn.delete(redis_key)
 
 # 2. Custom Range Snapshot (API input or manual)
 def generate_snapshot_for_range(user_id, start, end):

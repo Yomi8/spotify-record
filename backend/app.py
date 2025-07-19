@@ -232,6 +232,9 @@ def get_latest_lifetime_snapshot():
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id)
 
+    redis_key = f"snapshot_job:{user_id}:lifetime"
+
+    # Check for existing snapshot
     query = """
         SELECT * FROM user_snapshots
         WHERE user_id = %s AND range_type = 'lifetime'
@@ -241,23 +244,22 @@ def get_latest_lifetime_snapshot():
     snapshot = run_query(query, (user_id,), fetchone=True, dict_cursor=True)
 
     now = pendulum.now()
+
     if snapshot:
         snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
         age_minutes = now.diff(snapshot_time).in_minutes()
 
         if age_minutes < 10:
-            # Snapshot is fresh enough — return it immediately
+            # If fresh, return it
+            redis_conn.delete(redis_key)  # clear stale Redis flag
             return jsonify({"snapshot": snapshot}), 200
 
-    # Check if a snapshot job is already queued/running
-    redis_key = f"snapshot_job:{user_id}:lifetime"
+    # If not fresh, check if job already enqueued
     if redis_conn.exists(redis_key):
-        # Job is already queued/running, tell client to wait
         return jsonify({"message": "Snapshot generation in progress"}), 202
 
-    # Mark job as running for 10 mins to prevent duplicates
-    redis_conn.set(redis_key, "1", ex=600)  # 600 seconds = 10 mins
-
+    # Otherwise, mark job as started and enqueue
+    redis_conn.set(redis_key, "1", ex=300)  # expires after 5 minutes
     queue = rq.get_queue()
     job = queue.enqueue(generate_snapshot_for_period, user_id, "lifetime")
 
