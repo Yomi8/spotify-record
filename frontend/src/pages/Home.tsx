@@ -3,41 +3,48 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { useEffect, useState } from 'react';
 import backgroundImg from '../assets/images/background.jpg';
 
+interface SnapshotData {
+  total_songs: number;
+  top_artist: string;
+  top_genre: string;
+  generated_at: string;
+}
+
 export default function Home() {
   const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
-  const [stats, setStats] = useState<any>(null);
+  const [snapshot, setSnapshot] = useState<SnapshotData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchSnapshot = async () => {
       setLoading(true);
       setError(null);
 
       try {
         const token = await getAccessTokenSilently();
-        const response = await fetch('/api/user/stats', {
+        const response = await fetch('/api/snapshots/lifetime/latest', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch stats');
+          throw new Error('Failed to fetch snapshot');
         }
 
         const data = await response.json();
-        setStats(data);
+        setSnapshot(data.snapshot); // Assuming your API returns { snapshot: { ... } }
       } catch (err) {
         console.error(err);
-        setError('Could not load stats.');
+        setError('Could not load snapshot.');
       } finally {
         setLoading(false);
       }
     };
 
     if (isAuthenticated) {
-      fetchStats();
+      fetchSnapshot();
     }
   }, [isAuthenticated, getAccessTokenSilently]);
 
@@ -69,18 +76,21 @@ export default function Home() {
               )}
 
               {isAuthenticated && loading && (
-                <p>Loading your stats...</p>
+                <p>Loading your lifetime snapshot...</p>
               )}
 
               {isAuthenticated && error && (
                 <p className="text-danger">{error}</p>
               )}
 
-              {isAuthenticated && stats && (
+              {isAuthenticated && snapshot && (
                 <div>
-                  <p><strong>Total Songs Played:</strong> {stats.total_songs}</p>
-                  <p><strong>Top Artist:</strong> {stats.top_artist}</p>
-                  <p><strong>Top Genre:</strong> {stats.top_genre}</p>
+                  <p><strong>Total Songs Played:</strong> {snapshot.total_songs}</p>
+                  <p><strong>Top Artist:</strong> {snapshot.top_artist}</p>
+                  <p><strong>Top Genre:</strong> {snapshot.top_genre}</p>
+                  <p className="text-muted">
+                    <small>Last generated: {new Date(snapshot.generated_at).toLocaleString()}</small>
+                  </p>
                 </div>
               )}
             </div>

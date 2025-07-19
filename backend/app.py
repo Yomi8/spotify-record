@@ -222,5 +222,35 @@ def generate_custom_snapshot():
     job = queue.enqueue(generate_snapshot_for_range, user_id, start_dt, end_dt)
     return jsonify({"status": "started", "job_id": job.id}), 202
 
+@app.route('/api/snapshots/lifetime/latest', methods=['GET'])
+@jwt_required()
+def get_latest_lifetime_snapshot():
+    user_id = get_jwt_identity()
+
+    query = """
+        SELECT * FROM snapshots
+        WHERE user_id = %s AND period = 'lifetime'
+        ORDER BY generated_at DESC
+        LIMIT 1
+    """
+    snapshot = run_query(query, (user_id,), fetchone=True)
+
+    now = pendulum.now()
+    if snapshot:
+        generated_at = pendulum.parse(str(snapshot["generated_at"]))
+        age_minutes = now.diff(generated_at).in_minutes()
+
+        if age_minutes < 10:
+            return jsonify({"snapshot": snapshot}), 200
+
+    # Snapshot is missing or stale — generate a new one
+    queue = rq.get_queue()
+    job = queue.enqueue(generate_snapshot_for_period, user_id, "lifetime")
+
+    return jsonify({
+        "message": "Generating new snapshot",
+        "job_id": job.id
+    }), 202
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
