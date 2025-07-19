@@ -261,12 +261,37 @@ def get_latest_snapshot(period):
 
         if age_minutes < 10:
             # Snapshot is fresh, return it
-            # Clear Redis job flag if any (stale flags lingering)
             redis_conn.delete(redis_key)
             return jsonify({"snapshot": snapshot}), 200
 
     # Snapshot missing or stale, check if job already running
     if redis_conn.exists(redis_key):
+        # Try to get a new snapshot again (in case job finished but flag not cleared)
+        try:
+            snapshot = run_query(
+                """
+                SELECT *
+                FROM user_snapshots
+                WHERE user_id = %s AND range_type = %s
+                ORDER BY snapshot_time DESC
+                LIMIT 1
+                """,
+                (user_id, period),
+                fetchone=True,
+                dict_cursor=True,
+            )
+        except Exception as e:
+            print(f"Error fetching snapshot: {e}")
+            return jsonify({"error": "Database error"}), 500
+
+        if snapshot:
+            snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
+            age_minutes = now.diff(snapshot_time).in_minutes()
+            if age_minutes < 10:
+                # Snapshot is fresh, return it
+                redis_conn.delete(redis_key)
+                return jsonify({"snapshot": snapshot}), 200
+
         # Job is in progress, tell client to wait
         return jsonify({"message": "Snapshot generation in progress"}), 202
 
