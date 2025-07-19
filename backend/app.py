@@ -269,7 +269,9 @@ def get_latest_snapshot(period):
         snapshot = fetch_snapshot()
         if snapshot:
             snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
+            print(f"DEBUG: snapshot_time={snapshot_time}, now={now}")
             age_minutes = now.diff(snapshot_time).in_minutes()
+            print(f"DEBUG: age_minutes={age_minutes}")
             if age_minutes < 10:
                 redis_conn.delete(redis_key)
                 return jsonify({"snapshot": snapshot}), 200
