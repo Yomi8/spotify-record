@@ -238,8 +238,8 @@ def get_latest_lifetime_snapshot():
 
     now = pendulum.now()
     if snapshot:
-        generated_at = pendulum.parse(str(snapshot["generated_at"]))
-        age_minutes = now.diff(generated_at).in_minutes()
+        snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
+        age_minutes = now.diff(snapshot_time).in_minutes()
 
         if age_minutes < 10:
             return jsonify({"snapshot": snapshot}), 200
