@@ -228,9 +228,9 @@ def get_latest_lifetime_snapshot():
     user_id = get_jwt_identity()
 
     query = """
-        SELECT * FROM snapshots
-        WHERE user_id = %s AND period = 'lifetime'
-        ORDER BY generated_at DESC
+        SELECT * FROM user_snapshots
+        WHERE user_id = %s AND range_type = 'lifetime'
+        ORDER BY snapshot_time DESC
         LIMIT 1
     """
     snapshot = run_query(query, (user_id,), fetchone=True)
