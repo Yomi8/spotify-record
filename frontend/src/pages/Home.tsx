@@ -3,47 +3,41 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { useEffect, useState } from 'react';
 import backgroundImg from '../assets/images/background.jpg';
 
-interface SnapshotData {
-  total_songs: number;
-  top_artist: string;
-  top_genre: string;
-  generated_at: string;
-}
-
 export default function Home() {
   const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
-  const [snapshot, setSnapshot] = useState<SnapshotData | null>(null);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchSnapshot = async () => {
-      setLoading(true);
-      setError(null);
+  const fetchSnapshot = async (retryCount = 0) => {
+    try {
+      const token = await getAccessTokenSilently();
+      const response = await fetch('/api/snapshots/lifetime/latest', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      try {
-        const token = await getAccessTokenSilently();
-        const response = await fetch('/api/snapshots/lifetime/latest', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch snapshot');
-        }
-
+      if (response.status === 200) {
         const data = await response.json();
-        setSnapshot(data.snapshot); // Assuming your API returns { snapshot: { ... } }
-      } catch (err) {
-        console.error(err);
-        setError('Could not load snapshot.');
-      } finally {
+        setStats(data.snapshot);
         setLoading(false);
+      } else if (response.status === 202 && retryCount < 10) {
+        // Job started, wait and retry
+        setTimeout(() => fetchSnapshot(retryCount + 1), 3000); // Retry after 3 sec
+      } else {
+        throw new Error('Snapshot not ready or too many retries');
       }
-    };
+    } catch (err) {
+      console.error(err);
+      setError('Could not load stats.');
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (isAuthenticated) {
+      setLoading(true);
       fetchSnapshot();
     }
   }, [isAuthenticated, getAccessTokenSilently]);
@@ -76,21 +70,18 @@ export default function Home() {
               )}
 
               {isAuthenticated && loading && (
-                <p>Loading your lifetime snapshot...</p>
+                <p>Loading your stats...</p>
               )}
 
               {isAuthenticated && error && (
                 <p className="text-danger">{error}</p>
               )}
 
-              {isAuthenticated && snapshot && (
+              {isAuthenticated && stats && (
                 <div>
-                  <p><strong>Total Songs Played:</strong> {snapshot.total_songs}</p>
-                  <p><strong>Top Artist:</strong> {snapshot.top_artist}</p>
-                  <p><strong>Top Genre:</strong> {snapshot.top_genre}</p>
-                  <p className="text-muted">
-                    <small>Last generated: {new Date(snapshot.generated_at).toLocaleString()}</small>
-                  </p>
+                  <p><strong>Total Songs Played:</strong> {stats.total_songs}</p>
+                  <p><strong>Top Artist:</strong> {stats.top_artist}</p>
+                  <p><strong>Top Genre:</strong> {stats.top_genre}</p>
                 </div>
               )}
             </div>
