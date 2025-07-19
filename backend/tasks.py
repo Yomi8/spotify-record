@@ -292,7 +292,15 @@ def generate_snapshot_for_period(user_id, period):
                 else:
                     start, end = get_range_bounds(now, period)
 
+                # Force to pendulum instances
+                start = pendulum.instance(start)
+                end = pendulum.instance(end)
+
                 stats = get_snapshot_data(cursor, user_id, start, end)
+
+                # Safely convert optional fields if they exist
+                binge_start_ts = pendulum.instance(stats["binge_start_ts"]).to_datetime_string() if stats.get("binge_start_ts") else None
+                binge_end_ts = pendulum.instance(stats["binge_end_ts"]).to_datetime_string() if stats.get("binge_end_ts") else None
 
                 snapshot_data = {
                     "user_id": user_id,
@@ -303,8 +311,8 @@ def generate_snapshot_for_period(user_id, period):
                     "most_played_artist_name": stats.get("top_artist"),
                     "longest_binge_song_id": stats.get("binge_song_id"),
                     "binge_count": stats.get("binge_count"),
-                    "binge_start_ts": stats.get("binge_start_ts"),
-                    "binge_end_ts": stats.get("binge_end_ts"),
+                    "binge_start_ts": binge_start_ts,
+                    "binge_end_ts": binge_end_ts,
                     "range_start": start.to_datetime_string(),
                     "range_end": end.to_datetime_string(),
                 }
