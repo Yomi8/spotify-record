@@ -279,7 +279,7 @@ def generate_snapshot_for_period(user_id, period):
     print(f"Starting snapshot generation for user {user_id} period {period}")
     redis_key = f"snapshot_job:{user_id}:{period}"
 
-    now = pendulum.now()
+    now = pendulum.now("UTC")  # <-- Always use UTC
 
     try:
         with db_pool.get_connection() as conn:
@@ -292,29 +292,29 @@ def generate_snapshot_for_period(user_id, period):
                 else:
                     start, end = get_range_bounds(now, period)
 
-                # Force to pendulum instances
-                start = pendulum.instance(start)
-                end = pendulum.instance(end)
+                # Force to pendulum instances and convert to UTC
+                start = pendulum.instance(start).in_timezone("UTC")
+                end = pendulum.instance(end).in_timezone("UTC")
 
                 stats = get_snapshot_data(cursor, user_id, start, end)
 
-                # Safely convert optional fields if they exist
-                binge_start_ts = pendulum.instance(stats["binge_start_ts"]).to_datetime_string() if stats.get("binge_start_ts") else None
-                binge_end_ts = pendulum.instance(stats["binge_end_ts"]).to_datetime_string() if stats.get("binge_end_ts") else None
+                # Safely convert optional fields if they exist, and force to UTC
+                binge_start_ts = pendulum.instance(stats["binge_start"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_start") else None
+                binge_end_ts = pendulum.instance(stats["binge_end"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_end") else None
 
                 snapshot_data = {
                     "user_id": user_id,
                     "range_type": period,
-                    "snapshot_time": now.to_datetime_string(),
+                    "snapshot_time": now.to_datetime_string(),  # UTC
                     "total_songs_played": stats["total_songs"],
-                    "most_played_song_id": stats.get("top_song_id"),
+                    "most_played_song_id": stats.get("top_song"),
                     "most_played_artist_name": stats.get("top_artist"),
-                    "longest_binge_song_id": stats.get("binge_song_id"),
+                    "longest_binge_song_id": stats.get("binge_song"),
                     "binge_count": stats.get("binge_count"),
                     "binge_start_ts": binge_start_ts,
                     "binge_end_ts": binge_end_ts,
-                    "range_start": start.to_datetime_string(),
-                    "range_end": end.to_datetime_string(),
+                    "range_start": start.to_datetime_string(),  # UTC
+                    "range_end": end.to_datetime_string(),      # UTC
                 }
 
                 query = """
