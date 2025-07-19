@@ -276,6 +276,7 @@ def get_snapshot_data(cursor, user_id, start, end):
 
 # 1. Automated Period Snapshot (day/week/month/year/lifetime)
 def generate_snapshot_for_period(user_id, period):
+    print(f"Starting snapshot generation for user {user_id} period {period}")
     redis_key = f"snapshot_job:{user_id}:{period}"
 
     # Set Redis flag to mark snapshot generation in progress, expire after 10 mins
@@ -344,6 +345,7 @@ def generate_snapshot_for_period(user_id, period):
     finally:
         redis_conn.delete(redis_key)
         conn.close()
+        print(f"Snapshot generation complete for user {user_id} period {period}")
 
 # 2. Custom Range Snapshot (API input or manual)
 def generate_snapshot_for_range(user_id, start, end):
