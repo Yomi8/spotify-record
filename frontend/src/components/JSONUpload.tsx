@@ -48,34 +48,30 @@ const JSONUpload = () => {
 
   useEffect(() => {
     if (!taskId) return;
-
+  
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`https://yomi16.nz/api/job-status/${taskId}`);
         const data = await res.json();
-
-        if (res.status !== 200) {
-          throw new Error(data.error || "Unknown error");
-        }
-
+      
         const jobStatus = data.status;
         setStatus(jobStatus);
-
+      
         if (jobStatus === "finished") {
           clearInterval(interval);
           setResult(data.result);
         } else if (jobStatus === "failed") {
           clearInterval(interval);
-          setResult({ error: data.error || "Task failed" });
+          setResult({ error: data.error || "Job failed" });
         }
       } catch (err) {
         console.error("Polling error:", err);
         clearInterval(interval);
-        setStatus("Error polling job status.");
+        setStatus("Polling error");
         setResult({ error: (err as Error).message });
       }
     }, 3000);
-
+  
     return () => clearInterval(interval);
   }, [taskId]);
 

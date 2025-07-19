@@ -83,20 +83,23 @@ def db_status():
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
+
 @app.route("/api/job-status/<job_id>")
 def job_status(job_id):
     try:
         conn = Redis.from_url(app.config['RQ_REDIS_URL'])
         job = Job.fetch(job_id, connection=conn)
+        status = job.get_status()
 
         return jsonify({
             "job_id": job.id,
-            "status": job.get_status(),
+            "status": status,
             "result": job.result,
             "error": job.exc_info if job.is_failed else None,
-        })
+        }), 200
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"status": "failed", "error": str(e)}), 200
 
 @app.route('/api/users/sync', methods=['POST'])
 def sync_user():
