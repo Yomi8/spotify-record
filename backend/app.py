@@ -6,7 +6,6 @@ from flask_rq2 import RQ
 
 # Worker imports
 from redis import Redis
-from rq import Queue
 from rq.job import Job
 from tasks import process_spotify_json_file, generate_snapshot_for_period, generate_snapshot_for_range
 
@@ -162,7 +161,7 @@ def upload_spotify_json():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
     file.save(filepath)
 
-    job = rq.get_queue().enqueue(process_spotify_json_file, filepath, user_id)
+    job = rq.get_queue(process_spotify_json_file, filepath, user_id)
 
     return jsonify({"status": "queued", "job_id": job.id}), 202
 
