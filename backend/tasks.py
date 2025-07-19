@@ -276,40 +276,6 @@ def get_snapshot_data(cursor, user_id, start, end):
 
 # 1. Automated Period Snapshot (day/week/month/year/lifetime)
 def generate_snapshot_for_period(user_id, period):
-    conn = db_pool.get_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    now = pendulum.now()
-    if period == 'lifetime':
-        start, end = get_user_lifetime_range(cursor, user_id)
-        if not start or not end:
-            cursor.close()
-            conn.close()
-            return None
-    else:
-        start, end = get_range_bounds(now, period)
-
-    snapshot = get_snapshot_data(cursor, user_id, start, end)
-
-    cursor.execute("""
-        INSERT INTO user_snapshots (
-            user_id, total_songs_played, most_played_song_id,
-            most_played_artist_name, longest_binge_song_id, binge_count,
-            binge_start_ts, binge_end_ts, range_start, range_end, range_type
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, (
-        user_id, snapshot["total_songs"], snapshot["top_song"],
-        snapshot["top_artist"], snapshot["binge_song"], snapshot["binge_count"],
-        snapshot["binge_start"], snapshot["binge_end"], start, end, period
-    ))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"user_id": user_id, "range_type": period, "range_start": start, "range_end": end}
-
-
-def generate_snapshot_for_period(user_id, period):
     redis_key = f"snapshot_job:{user_id}:{period}"
     try:
         # Calculate snapshot_time
