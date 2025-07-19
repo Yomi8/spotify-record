@@ -48,6 +48,7 @@ jwt = JWTManager(app)
 
 # RQ config
 app.config['RQ_REDIS_URL'] = 'redis://localhost:6379/0'
+redis_conn = Redis.from_url(app.config['RQ_REDIS_URL'])
 rq = RQ(app)
 
 # MySQL config
@@ -245,9 +246,18 @@ def get_latest_lifetime_snapshot():
         age_minutes = now.diff(snapshot_time).in_minutes()
 
         if age_minutes < 10:
+            # Snapshot is fresh enough — return it immediately
             return jsonify({"snapshot": snapshot}), 200
 
-    # Snapshot is missing or stale — generate a new one
+    # Check if a snapshot job is already queued/running
+    redis_key = f"snapshot_job:{user_id}:lifetime"
+    if redis_conn.exists(redis_key):
+        # Job is already queued/running, tell client to wait
+        return jsonify({"message": "Snapshot generation in progress"}), 202
+
+    # Mark job as running for 10 mins to prevent duplicates
+    redis_conn.set(redis_key, "1", ex=600)  # 600 seconds = 10 mins
+
     queue = rq.get_queue()
     job = queue.enqueue(generate_snapshot_for_period, user_id, "lifetime")
 
