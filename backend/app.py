@@ -166,7 +166,7 @@ def upload_spotify_json():
     file.save(filepath)
 
     queue = rq.get_queue()
-    job = queue(process_spotify_json_file, filepath, user_id)
+    job = queue.enqueue(process_spotify_json_file, filepath, user_id)
 
     return jsonify({"status": "queued", "job_id": job.id}), 202
 
