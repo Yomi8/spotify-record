@@ -8,8 +8,9 @@ export default function Home() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const fetchSnapshot = async (retryCount = 0) => {
+  const fetchSnapshot = async (retry = 0) => {
     try {
       const token = await getAccessTokenSilently();
       const response = await fetch('/api/snapshots/lifetime/latest', {
@@ -18,13 +19,16 @@ export default function Home() {
         },
       });
 
+      console.log(`Snapshot fetch attempt ${retry}, status: ${response.status}`);
+
       if (response.status === 200) {
         const data = await response.json();
         setStats(data.snapshot);
         setLoading(false);
-      } else if (response.status === 202 && retryCount < 10) {
-        // Job started, wait and retry
-        setTimeout(() => fetchSnapshot(retryCount + 1), 3000); // Retry after 3 sec
+        setRetryCount(0);
+      } else if (response.status === 202 && retry < 10) {
+        setRetryCount(retry + 1);
+        setTimeout(() => fetchSnapshot(retry + 1), 3000);
       } else {
         throw new Error('Snapshot not ready or too many retries');
       }
@@ -38,6 +42,8 @@ export default function Home() {
   useEffect(() => {
     if (isAuthenticated) {
       setLoading(true);
+      setError(null);
+      setStats(null);
       fetchSnapshot();
     }
   }, [isAuthenticated, getAccessTokenSilently]);
@@ -70,18 +76,25 @@ export default function Home() {
               )}
 
               {isAuthenticated && loading && (
-                <p>Loading your stats...</p>
+                <p>Loading your stats... (attempt {retryCount + 1}/10)</p>
               )}
 
               {isAuthenticated && error && (
                 <p className="text-danger">{error}</p>
               )}
 
+              {isAuthenticated && !stats && retryCount >= 10 && (
+                <p className="text-warning">
+                  Snapshot took too long to generate. Please try again later.
+                </p>
+              )}
+
               {isAuthenticated && stats && (
                 <div>
-                  <p><strong>Total Songs Played:</strong> {stats.total_songs}</p>
-                  <p><strong>Top Artist:</strong> {stats.top_artist}</p>
-                  <p><strong>Top Genre:</strong> {stats.top_genre}</p>
+                  <p><strong>Total Plays:</strong> {stats.total_plays}</p>
+                  <p><strong>Top Song:</strong> {stats.most_played_song}</p>
+                  <p><strong>Top Artist:</strong> {stats.most_played_artist}</p>
+                  <p><strong>Longest Binge:</strong> {stats.longest_binge}</p>
                 </div>
               )}
             </div>
