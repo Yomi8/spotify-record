@@ -161,115 +161,156 @@ def process_spotify_json_file(file_path, user_id):
         print(f"Error in process_spotify_json_file: {e}")
         raise
 
-def update_user_snapshots(user_id=None):
+
+def get_range_bounds(now, range_type):
+    if range_type == 'day':
+        return now.subtract(days=1), now
+    elif range_type == 'week':
+        return now.subtract(weeks=1), now
+    elif range_type == 'month':
+        return now.subtract(months=1), now
+    elif range_type == 'year':
+        return now.subtract(years=1), now
+    else:
+        raise ValueError(f"Unknown range type: {range_type}")
+
+
+def get_user_lifetime_range(cursor, user_id):
+    cursor.execute("SELECT MIN(ts) AS start, MAX(ts) AS end FROM usage_logs WHERE user_id = %s", (user_id,))
+    row = cursor.fetchone()
+    return row['start'], row['end']
+
+
+def calculate_longest_binge(rows):
+    if not rows: return None, 0, None, None
+
+    max_song = rows[0]['song_id']
+    max_count = 1
+    max_start = rows[0]['ts']
+    max_end = rows[0]['ts']
+
+    current_song = rows[0]['song_id']
+    current_start = rows[0]['ts']
+    count = 1
+
+    for i in range(1, len(rows)):
+        if rows[i]['song_id'] == current_song:
+            count += 1
+        else:
+            if count > max_count:
+                max_song, max_count = current_song, count
+                max_start, max_end = current_start, rows[i - 1]['ts']
+            current_song = rows[i]['song_id']
+            current_start = rows[i]['ts']
+            count = 1
+
+    if count > max_count:
+        max_song, max_count = current_song, count
+        max_start, max_end = current_start, rows[-1]['ts']
+
+    return max_song, max_count, max_start, max_end
+
+
+def get_snapshot_data(cursor, user_id, start, end):
+    cursor.execute("""
+        SELECT COUNT(*) AS total FROM usage_logs
+        WHERE user_id = %s AND ts BETWEEN %s AND %s
+    """, (user_id, start, end))
+    total = cursor.fetchone()['total']
+
+    cursor.execute("""
+        SELECT song_id, SUM(ms_played) AS total_played
+        FROM usage_logs
+        WHERE user_id = %s AND ts BETWEEN %s AND %s
+        GROUP BY song_id ORDER BY total_played DESC LIMIT 1
+    """, (user_id, start, end))
+    row = cursor.fetchone()
+    top_song = row['song_id'] if row else None
+
+    cursor.execute("""
+        SELECT cs.artist_name, SUM(ul.ms_played) AS total_artist_played
+        FROM usage_logs ul
+        JOIN core_songs cs ON ul.song_id = cs.song_id
+        WHERE ul.user_id = %s AND ul.ts BETWEEN %s AND %s
+        GROUP BY cs.artist_name ORDER BY total_artist_played DESC LIMIT 1
+    """, (user_id, start, end))
+    row = cursor.fetchone()
+    top_artist = row['artist_name'] if row else None
+
+    cursor.execute("""
+        SELECT song_id, ts FROM usage_logs
+        WHERE user_id = %s AND ts BETWEEN %s AND %s
+        ORDER BY ts ASC
+    """, (user_id, start, end))
+    binge_rows = cursor.fetchall()
+    binge_song, binge_count, binge_start, binge_end = calculate_longest_binge(binge_rows)
+
+    return {
+        "total_songs": total,
+        "top_song": top_song,
+        "top_artist": top_artist,
+        "binge_song": binge_song,
+        "binge_count": binge_count,
+        "binge_start": binge_start,
+        "binge_end": binge_end,
+    }
+
+
+# 1. Automated Period Snapshot (day/week/month/year/lifetime)
+def generate_snapshot_for_period(user_id, period):
     conn = db_pool.get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    if user_id:
-        users = [{'user_id': user_id}]
+    now = pendulum.now()
+    if period == 'lifetime':
+        start, end = get_user_lifetime_range(cursor, user_id)
+        if not start or not end:
+            cursor.close()
+            conn.close()
+            return None
     else:
-        cursor.execute("SELECT user_id FROM core_users")
-        users = cursor.fetchall()
+        start, end = get_range_bounds(now, period)
 
-    periods = ['day', 'week', 'month', 'year']
+    snapshot = get_snapshot_data(cursor, user_id, start, end)
 
-    def get_range_bounds(now: pendulum.DateTime, range_type: str):
-        if range_type == 'day':
-            start = now.subtract(days=1)
-        elif range_type == 'week':
-            start = now.subtract(weeks=1)
-        elif range_type == 'month':
-            start = now.subtract(months=1)
-        elif range_type == 'year':
-            start = now.subtract(years=1)
-        else:
-            raise ValueError(f"Unknown range type: {range_type}")
+    cursor.execute("""
+        INSERT INTO user_snapshots (
+            user_id, total_songs_played, most_played_song_id,
+            most_played_artist_name, longest_binge_song_id, binge_count,
+            binge_start_ts, binge_end_ts, range_start, range_end, range_type
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        user_id, snapshot["total_songs"], snapshot["top_song"],
+        snapshot["top_artist"], snapshot["binge_song"], snapshot["binge_count"],
+        snapshot["binge_start"], snapshot["binge_end"], start, end, period
+    ))
 
-        end = now  # precise to current timestamp
-        return start, end
-
-    def calculate_longest_binge(rows):
-        if not rows:
-            return None, 0, None, None
-
-        max_song = rows[0]['song_id']
-        max_count = 1
-        max_start = rows[0]['ts']
-        max_end = rows[0]['ts']
-
-        current_song = rows[0]['song_id']
-        current_start = rows[0]['ts']
-        count = 1
-
-        for i in range(1, len(rows)):
-            if rows[i]['song_id'] == current_song:
-                count += 1
-            else:
-                if count > max_count:
-                    max_song, max_count = current_song, count
-                    max_start, max_end = current_start, rows[i - 1]['ts']
-                current_song = rows[i]['song_id']
-                current_start = rows[i]['ts']
-                count = 1
-
-        if count > max_count:
-            max_song, max_count = current_song, count
-            max_start, max_end = current_start, rows[-1]['ts']
-
-        return max_song, max_count, max_start, max_end
-
-    now = pendulum.now("UTC")
-
-    for user in users:
-        uid = user['user_id']
-        for period in periods:
-            start, end = get_range_bounds(now, period)
-
-            cursor.execute("""
-                SELECT COUNT(*) AS total FROM usage_logs
-                WHERE user_id = %s AND ts BETWEEN %s AND %s
-            """, (uid, start, end))
-            total_songs = cursor.fetchone()['total']
-
-            cursor.execute("""
-                SELECT song_id, SUM(ms_played) AS total_played
-                FROM usage_logs
-                WHERE user_id = %s AND ts BETWEEN %s AND %s
-                GROUP BY song_id ORDER BY total_played DESC LIMIT 1
-            """, (uid, start, end))
-            song_row = cursor.fetchone()
-            top_song = song_row['song_id'] if song_row else None
-
-            cursor.execute("""
-                SELECT cs.artist_name, SUM(ul.ms_played) AS total_artist_played
-                FROM usage_logs ul
-                JOIN core_songs cs ON ul.song_id = cs.song_id
-                WHERE ul.user_id = %s AND ul.ts BETWEEN %s AND %s
-                GROUP BY cs.artist_name ORDER BY total_artist_played DESC LIMIT 1
-            """, (uid, start, end))
-            artist_row = cursor.fetchone()
-            top_artist = artist_row['artist_name'] if artist_row else None
-
-            cursor.execute("""
-                SELECT song_id, ts FROM usage_logs
-                WHERE user_id = %s AND ts BETWEEN %s AND %s
-                ORDER BY ts ASC
-            """, (uid, start, end))
-            binge_rows = cursor.fetchall()
-            binge_song, binge_count, binge_start, binge_end = calculate_longest_binge(binge_rows)
-
-            cursor.execute("""
-                INSERT INTO user_snapshots (
-                    user_id, total_songs_played, most_played_song_id,
-                    most_played_artist_name, longest_binge_song_id, binge_count,
-                    binge_start_ts, binge_end_ts, range_start, range_end, range_type
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                uid, total_songs, top_song, top_artist, binge_song, binge_count,
-                binge_start, binge_end, start, end, period
-            ))
-
-            conn.commit()
-
+    conn.commit()
     cursor.close()
     conn.close()
+    return {"user_id": user_id, "range_type": period, "range_start": start, "range_end": end}
+
+
+# 2. Custom Range Snapshot (API input or manual)
+def generate_snapshot_for_range(user_id, start, end):
+    conn = db_pool.get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    snapshot = get_snapshot_data(cursor, user_id, start, end)
+
+    cursor.execute("""
+        INSERT INTO user_snapshots (
+            user_id, total_songs_played, most_played_song_id,
+            most_played_artist_name, longest_binge_song_id, binge_count,
+            binge_start_ts, binge_end_ts, range_start, range_end, range_type
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        user_id, snapshot["total_songs"], snapshot["top_song"],
+        snapshot["top_artist"], snapshot["binge_song"], snapshot["binge_count"],
+        snapshot["binge_start"], snapshot["binge_end"], start, end, 'custom'
+    ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return {"user_id": user_id, "range_type": "custom", "range_start": start, "range_end": end}

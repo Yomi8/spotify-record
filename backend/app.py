@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from flask_rq2 import RQ
+from rq import queue
+import pendulum
 from rq.job import Job
 from redis import Redis
 from tasks import process_spotify_json_file, update_user_snapshots
@@ -160,7 +162,36 @@ def generate_snapshots():
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
-    job = rq.get_queue().enqueue(update_user_snapshots, user_id)
+    period = request.json.get("period", "day")
+    if period not in {"day", "week", "month", "year", "lifetime"}:
+        return jsonify({"error": "Invalid period type"}), 400
+
+    job = queue.enqueue(generate_snapshot_for_period, user_id, period)
+    return jsonify({"status": "started", "job_id": job.id}), 202
+
+@app.route("/api/snapshots/generate/custom", methods=["POST"])
+@jwt_required()
+def generate_custom_snapshot():
+    auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id)
+
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.get_json()
+    start = data.get("start")
+    end = data.get("end")
+
+    if not start or not end:
+        return jsonify({"error": "Missing 'start' or 'end' timestamp"}), 400
+
+    try:
+        start_dt = pendulum.parse(start)
+        end_dt = pendulum.parse(end)
+    except Exception as e:
+        return jsonify({"error": f"Invalid datetime format: {str(e)}"}), 400
+
+    job = queue.enqueue(generate_snapshot_for_range, user_id, start_dt, end_dt)
     return jsonify({"status": "started", "job_id": job.id}), 202
 
 if __name__ == "__main__":
