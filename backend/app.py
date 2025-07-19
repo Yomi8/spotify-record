@@ -307,6 +307,7 @@ def get_latest_snapshot(period):
         print(f"DEBUG: age_minutes={age_minutes}", flush=True)
         if age_minutes < 10:
             redis_conn.delete(redis_key)
+            snapshot = enrich_snapshot(snapshot)
             return jsonify({"snapshot": snapshot}), 200
 
     # 2. If no fresh snapshot, check if job is running
