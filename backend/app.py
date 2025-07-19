@@ -1,15 +1,19 @@
+# Flask package imports
 from flask import Flask, request, jsonify
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from flask_rq2 import RQ
-from rq import queue
-import pendulum
-from rq.job import Job
+
+# Worker imports
 from redis import Redis
+from rq import Queue
+from rq.job import Job
 from tasks import process_spotify_json_file, generate_snapshot_for_period, generate_snapshot_for_range
+
+# Database and utility imports
 import mysql.connector.pooling
-from datetime import datetime
-import requests
+import pendulum
+
 import sys
 import os
 import json
@@ -22,9 +26,12 @@ SPOTIFY_TOKEN = "972e38506b164833aea4abe281f96585"
 app = Flask(__name__)
 CORS(app, origins=["https://yomi16.nz", "http://127.0.0.1:3000"], supports_credentials=True)
 
+
+# Upload config
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
+# JWT config
 app.config["JWT_TOKEN_LOCATION"] = ["headers"]
 app.config["JWT_ALGORITHM"] = "RS256"
 app.config["JWT_PUBLIC_KEY"] = """
@@ -38,12 +45,13 @@ ucpignGsRTOVhSwDZ+q0OmEmDD8Halv0RWeEMAPHBMLxiLuLTm6U3gN9IEbMo6nU
 vwIDAQAB
 -----END PUBLIC KEY-----
 """
+jwt = JWTManager(app)
 
+# RQ config
 app.config['RQ_REDIS_URL'] = 'redis://localhost:6379/0'
 rq = RQ(app)
 
-jwt = JWTManager(app)
-
+# MySQL config
 db_pool = mysql.connector.pooling.MySQLConnectionPool(
     pool_name="spotify_pool",
     pool_size=10,
@@ -53,6 +61,7 @@ db_pool = mysql.connector.pooling.MySQLConnectionPool(
     database="spotifydb"
 )
 
+# Basic query execution
 def run_query(query, params=None, commit=False, fetchone=False):
     conn = db_pool.get_connection()
     try:
@@ -65,6 +74,7 @@ def run_query(query, params=None, commit=False, fetchone=False):
     finally:
         conn.close()
 
+# Translate auth0_id to internal user_id
 def get_user_id_from_auth0(auth0_id):
     """
     Lookup internal user_id from auth0_id. Returns user_id (int) or None.
@@ -77,6 +87,7 @@ def get_user_id_from_auth0(auth0_id):
     conn.close()
     return row[0] if row else None
 
+# Check if database is connected
 @app.route('/api/status', methods=['GET'])
 def db_status():
     try:
@@ -85,7 +96,7 @@ def db_status():
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
-
+# Get status of a job by ID
 @app.route("/api/job-status/<job_id>")
 def job_status(job_id):
     try:
@@ -103,6 +114,7 @@ def job_status(job_id):
     except Exception as e:
         return jsonify({"status": "failed", "error": str(e)}), 200
 
+# Sync user data from Auth0
 @app.route('/api/users/sync', methods=['POST'])
 def sync_user():
     data = request.get_json()
@@ -127,6 +139,7 @@ def sync_user():
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
+# Upload Spotify Extended Listining JSON file
 @app.route('/api/upload-spotify-json', methods=['POST'])
 @jwt_required()
 def upload_spotify_json():
@@ -153,6 +166,7 @@ def upload_spotify_json():
 
     return jsonify({"status": "queued", "job_id": job.id}), 202
 
+# Generate pre-defined snapshots
 @app.route("/api/snapshots/generate", methods=["POST"])
 @jwt_required()
 def generate_snapshots():
@@ -166,9 +180,10 @@ def generate_snapshots():
     if period not in {"day", "week", "month", "year", "lifetime"}:
         return jsonify({"error": "Invalid period type"}), 400
 
-    job = queue.enqueue(generate_snapshot_for_period, user_id, period)
+    job = rq.get_queue(generate_snapshot_for_period, user_id, period)
     return jsonify({"status": "started", "job_id": job.id}), 202
 
+# Generate custom snapshot for a specific date range
 @app.route("/api/snapshots/generate/custom", methods=["POST"])
 @jwt_required()
 def generate_custom_snapshot():
@@ -191,7 +206,7 @@ def generate_custom_snapshot():
     except Exception as e:
         return jsonify({"error": f"Invalid datetime format: {str(e)}"}), 400
 
-    job = queue.enqueue(generate_snapshot_for_range, user_id, start_dt, end_dt)
+    job = rq.get_queue(generate_snapshot_for_range, user_id, start_dt, end_dt)
     return jsonify({"status": "started", "job_id": job.id}), 202
 
 if __name__ == "__main__":
