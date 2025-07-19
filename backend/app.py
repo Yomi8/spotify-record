@@ -61,12 +61,15 @@ db_pool = mysql.connector.pooling.MySQLConnectionPool(
 )
 
 # Basic query execution
-def run_query(query, params=None, commit=False, fetchone=False):
+def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=False):
     conn = db_pool.get_connection()
     try:
-        with conn.cursor() as cursor:
+        with conn.cursor(dictionary=dict_cursor) as cursor:
             cursor.execute(query, params or ())
-            result = cursor.fetchone() if fetchone else cursor.fetchall() if cursor.with_rows else None
+            result = (
+                cursor.fetchone() if fetchone else
+                cursor.fetchall() if cursor.with_rows else None
+            )
         if commit:
             conn.commit()
         return result
@@ -234,7 +237,7 @@ def get_latest_lifetime_snapshot():
         ORDER BY snapshot_time DESC
         LIMIT 1
     """
-    snapshot = run_query(query, (user_id,), fetchone=True)
+    snapshot = run_query(query, (user_id,), fetchone=True, dict_cursor=True)
 
     now = pendulum.now()
     if snapshot:
