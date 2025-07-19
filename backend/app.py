@@ -161,7 +161,8 @@ def upload_spotify_json():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
     file.save(filepath)
 
-    job = rq.get_queue(process_spotify_json_file, filepath, user_id)
+    queue = rq.get_queue()
+    job = queue(process_spotify_json_file, filepath, user_id)
 
     return jsonify({"status": "queued", "job_id": job.id}), 202
 
@@ -205,7 +206,8 @@ def generate_custom_snapshot():
     except Exception as e:
         return jsonify({"error": f"Invalid datetime format: {str(e)}"}), 400
 
-    job = rq.get_queue(generate_snapshot_for_range, user_id, start_dt, end_dt)
+    queue = rq.get_queue()
+    job = queue(generate_snapshot_for_range, user_id, start_dt, end_dt)
     return jsonify({"status": "started", "job_id": job.id}), 202
 
 if __name__ == "__main__":
