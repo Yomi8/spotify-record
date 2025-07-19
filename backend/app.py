@@ -170,6 +170,25 @@ def upload_spotify_json():
 
     return jsonify({"status": "queued", "job_id": job.id}), 202
 
+def enrich_snapshot(snapshot):
+    # Get song name
+    song_name = None
+    artist_name = None
+    if snapshot.get("most_played_song_id"):
+        song_row = run_query(
+            "SELECT track_name, artist_name FROM core_songs WHERE song_id = %s",
+            (snapshot["most_played_song_id"],),
+            fetchone=True,
+            dict_cursor=True
+        )
+        if song_row:
+            song_name = song_row["track_name"]
+            artist_name = song_row["artist_name"]
+
+    snapshot["most_played_song"] = song_name
+    snapshot["most_played_artist"] = artist_name
+    return snapshot
+
 # Generate pre-defined snapshots
 @app.route("/api/snapshots/generate", methods=["POST"])
 @jwt_required()
@@ -277,6 +296,7 @@ def get_latest_snapshot(period):
             print(f"DEBUG: age_minutes={age_minutes}", flush=True)
             if age_minutes < 10:
                 redis_conn.delete(redis_key)
+                snapshot = enrich_snapshot(snapshot)
                 return jsonify({"snapshot": snapshot}), 200
         return jsonify({"message": "Snapshot generation in progress"}), 202
 
