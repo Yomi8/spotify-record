@@ -1,6 +1,6 @@
 import json
 import pendulum
-from spotify_auth import sp
+from spotify_auth import sp_app
 import mysql.connector.pooling
 import redis
 import os
@@ -44,7 +44,7 @@ def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=Fals
 def get_spotify_metadata(uri):
     track_id = uri.split(":")[-1]
     try:
-        track = sp.track(track_id)
+        track = sp_app.track(track_id)
         album = track["album"]
         return {
             "track_name": track["name"],
