@@ -142,31 +142,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-
-          {/* Right image */}
-          <div className="col-md-6 position-relative p-0">
-            <img
-              src={backgroundImg}
-              alt="Abstract Background"
-              style={{
-                width: '100%',
-                height: '100vh',
-                objectFit: 'cover',
-                display: 'block',
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '40%',
-                height: '100%',
-                background: 'linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0))',
-                pointerEvents: 'none',
-              }}
-            />
-          </div>
         </div>
       </div>
     </div>
