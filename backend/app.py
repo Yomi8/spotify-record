@@ -1,5 +1,5 @@
 # Flask package imports
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from flask_rq2 import RQ
@@ -17,10 +17,14 @@ import sys
 import os
 import json
 import uuid
+import requests
+from base64 import b64encode
+import urllib.parse
 
 print("Python executing Flask app:", sys.executable)
 
 SPOTIFY_TOKEN = "972e38506b164833aea4abe281f96585"
+SPOTIFY_SCOPES = "user-read-recently-played"
 
 app = Flask(__name__)
 CORS(app, origins=["https://yomi16.nz", "http://127.0.0.1:3000"], supports_credentials=True)
@@ -76,6 +80,80 @@ def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=Fals
         return result
     finally:
         conn.close()
+
+@app.route("/api/spotify/login")
+@jwt_required()
+def spotify_login():
+    auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id)
+
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
+
+    query = urllib.parse.urlencode({
+        "client_id": client_id,
+        "response_type": "code",
+        "redirect_uri": "https://yomi16.nz/api/spotify/callback",
+        "scope": SPOTIFY_SCOPES,
+        "state": str(user_id),
+    })
+    return redirect(f"https://accounts.spotify.com/authorize?{query}")
+
+
+@app.route("/api/spotify/callback")
+def spotify_callback():
+    code = request.args.get("code")
+    state = request.args.get("state")  # user_id
+
+    if not code or not state:
+        return jsonify({"error": "Missing code or state"}), 400
+
+    auth_header = b64encode(f"{client_id}:{client_secret}".encode()).decode()
+
+    response = requests.post("https://accounts.spotify.com/api/token", data={
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": "https://yomi16.nz/api/spotify/callback",
+    }, headers={
+        "Authorization": f"Basic {auth_header}",
+        "Content-Type": "application/x-www-form-urlencoded",
+    })
+
+    if response.status_code != 200:
+        return jsonify({"error": "Failed to get token", "details": response.text}), 400
+
+    tokens = response.json()
+    access_token = tokens["access_token"]
+    refresh_token = tokens.get("refresh_token")
+
+    # Store in DB (example)
+    run_query("""
+        REPLACE INTO spotify_tokens (user_id, access_token, refresh_token)
+        VALUES (%s, %s, %s)
+    """, (state, access_token, refresh_token), commit=True)
+
+    return jsonify({"status": "connected"})
+
+@app.route("/api/spotify/recent", methods=["GET"])
+@jwt_required()
+def get_recently_played():
+    auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id)
+
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
+
+    token_row = run_query("SELECT access_token FROM spotify_tokens WHERE user_id = %s", (user_id,), fetchone=True)
+    if not token_row:
+        return jsonify({"error": "Spotify not connected"}), 400
+
+    sp = Spotify(auth=token_row["access_token"])
+
+    try:
+        recent = sp.current_user_recently_played(limit=50)
+        return jsonify(recent), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch data", "details": str(e)}), 500
 
 # Translate auth0_id to internal user_id
 def get_user_id_from_auth0(auth0_id):
