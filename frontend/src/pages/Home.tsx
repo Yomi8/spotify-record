@@ -51,87 +51,122 @@ export default function Home() {
   return (
     <div
       className="container-fluid text-white py-4"
-      style={{ minHeight: '100vh', background: 'linear-gradient(to right, #000, #333)' }}
+      style={{
+        minHeight: '100vh',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
     >
-      <h1>
-        Welcome{' '}
-        <span>
-          {isAuthenticated
-            ? user?.nickname || user?.name || user?.email || 'User'
-            : 'Guest'}
-        </span>
-        !
-      </h1>
+      {/* Background image */}
+      <img
+        src={backgroundImg}
+        alt="Abstract Background"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          objectFit: 'cover',
+          zIndex: 0,
+        }}
+      />
+      {/* Gradient overlay */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'linear-gradient(to right, #000 60%, #333 100%)',
+          opacity: 0.85,
+          zIndex: 1,
+          pointerEvents: 'none',
+        }}
+      />
 
-      <div className="row mt-4">
-        {/* Left card */}
-        <div className="col-md-6">
-          <div className="card bg-dark text-white shadow">
-            <div className="card-header">
-              <i className="bi bi-bar-chart me-2"></i> Quick Bits
-            </div>
-            <div className="card-body">
-              {!isAuthenticated && (
-                <p>Please log in to view your stats.</p>
-              )}
+      {/* Main content */}
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        <h1>
+          Welcome{' '}
+          <span>
+            {isAuthenticated
+              ? user?.nickname || user?.name || user?.email || 'User'
+              : 'Guest'}
+          </span>
+          !
+        </h1>
+        <div className="row mt-4">
+          {/* Left card */}
+          <div className="col-md-6">
+            <div className="card bg-dark text-white shadow">
+              <div className="card-header">
+                <i className="bi bi-bar-chart me-2"></i> Quick Bits
+              </div>
+              <div className="card-body">
+                {!isAuthenticated && (
+                  <p>Please log in to view your stats.</p>
+                )}
 
-              {isAuthenticated && loading && (
-                <p>Loading your stats... (attempt {retryCount + 1}/10)</p>
-              )}
+                {isAuthenticated && loading && (
+                  <p>Loading your stats... (attempt {retryCount + 1}/10)</p>
+                )}
 
-              {isAuthenticated && error && (
-                <p className="text-danger">{error}</p>
-              )}
+                {isAuthenticated && error && (
+                  <p className="text-danger">{error}</p>
+                )}
 
-              {isAuthenticated && !stats && retryCount >= 10 && (
-                <p className="text-warning">
-                  Snapshot took too long to generate. Please try again later.
-                </p>
-              )}
+                {isAuthenticated && !stats && retryCount >= 10 && (
+                  <p className="text-warning">
+                    Snapshot took too long to generate. Please try again later.
+                  </p>
+                )}
 
-              {isAuthenticated && stats && (
-                <div>
-                  <p><strong>Total Plays:</strong> {stats.total_plays}</p>
-                  <p><strong>Top Song:</strong> {stats.most_played_song}</p>
-                  <p><strong>Top Artist:</strong> {stats.most_played_artist}</p>
-                  {stats.most_played_song_image_url && (
-                    <img src={stats.most_played_song_image_url} alt="Top Song Cover" style={{width: 64, height: 64}} />
-                  )}
+                {isAuthenticated && stats && (
+                  <div>
+                    <p><strong>Total Plays:</strong> {stats.total_plays}</p>
+                    <p><strong>Top Song:</strong> {stats.most_played_song}</p>
+                    <p><strong>Top Artist:</strong> {stats.most_played_artist}</p>
+                    {stats.most_played_song_image_url && (
+                      <img src={stats.most_played_song_image_url} alt="Top Song Cover" style={{width: 64, height: 64}} />
+                    )}
 
-                  <p><strong>Longest Binge Song:</strong> {stats.longest_binge_song}</p>
-                  <p><strong>Binge Artist:</strong> {stats.longest_binge_artist}</p>
-                  {stats.longest_binge_song_image_url && (
-                    <img src={stats.longest_binge_song_image_url} alt="Binge Song Cover" style={{width: 64, height: 64}} />
-                  )}
-                </div>
-              )}
+                    <p><strong>Longest Binge Song:</strong> {stats.longest_binge_song}</p>
+                    <p><strong>Binge Artist:</strong> {stats.longest_binge_artist}</p>
+                    {stats.longest_binge_song_image_url && (
+                      <img src={stats.longest_binge_song_image_url} alt="Binge Song Cover" style={{width: 64, height: 64}} />
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Right image */}
-        <div className="col-md-6 position-relative p-0">
-          <img
-            src={backgroundImg}
-            alt="Abstract Background"
-            style={{
-              width: '100%',
-              height: '100vh',
-              objectFit: 'cover',
-              display: 'block',
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '40%',
-              height: '100%',
-              background: 'linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0))',
-              pointerEvents: 'none',
-            }}
-          />
+          {/* Right image */}
+          <div className="col-md-6 position-relative p-0">
+            <img
+              src={backgroundImg}
+              alt="Abstract Background"
+              style={{
+                width: '100%',
+                height: '100vh',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '40%',
+                height: '100%',
+                background: 'linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0))',
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>
