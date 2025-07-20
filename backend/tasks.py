@@ -1,6 +1,6 @@
 import json
 import pendulum
-from spotify_client import sp
+from spotify_auth import sp
 import mysql.connector.pooling
 import redis
 import os
