@@ -37,8 +37,21 @@ export default function Navbar() {
               <li>{user && <span className="dropdown-item-text">{user.name}</span>}</li>
               <li><Link className="dropdown-item" to="/profile">Profile</Link></li>
               <li><Link className="dropdown-item" to="/settings">Settings</Link></li>
+          
+              {/* Connect to Spotify Button */}
+              <li>
+                <a className="dropdown-item" href="https://yomi16.nz/api/spotify/login">
+                  Connect to Spotify
+                </a>
+                  <i className="bi bi-music-note-list text-danger me-2"></i>Connect to Last.fm
+              </li>
+          
               <li><hr className="dropdown-divider" /></li>
-              <li><button onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>Logout</button></li>
+              <li>
+                <button className="dropdown-item" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
+                  Logout
+                </button>
+              </li>
             </>
           ) : (
             <li><button className="dropdown-item" onClick={() => loginWithRedirect()}>Sign In</button></li>
