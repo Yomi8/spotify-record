@@ -102,8 +102,16 @@ def get_spotify_tokens(user_id):
 @app.route("/api/spotify/login")
 @jwt_required()
 def spotify_login():
-    session["user_id"] = get_jwt_identity()
-    return redirect(sp_oauth.get_authorize_url())
+    auth0_id = get_jwt_identity()
+    if not auth0_id:
+        return {"msg": "Missing user ID"}, 401
+
+    # Store the user ID in the session temporarily for use in the callback
+    session["auth0_id"] = auth0_id
+
+    # Redirect to Spotify's authorization URL
+    auth_url = sp_oauth.get_authorize_url()
+    return redirect(auth_url)
 
 @app.route("/api/spotify/callback")
 def spotify_callback():

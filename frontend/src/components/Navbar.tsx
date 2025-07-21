@@ -40,9 +40,9 @@ export default function Navbar() {
           
               {/* Connect to Spotify Button */}
               <li>
-                <Link className="dropdown-item" to="/connect-spotify">
+                <a className="dropdown-item" to="/connect-spotify">
                   Connect to Spotify
-                </Link>
+                </a>
               </li>
           
               <li><hr className="dropdown-divider" /></li>
