@@ -18,15 +18,19 @@ export default function ConnectSpotify() {
         if (res.status === 302 || res.status === 301) {
           const redirectUrl = res.headers.get("Location");
           if (redirectUrl) {
-            // Redirect the browser to Spotify login page
             window.location.href = redirectUrl;
           } else {
             console.error("Redirect location header missing");
           }
-        } else {
+        } else if (res.headers.get("content-type")?.includes("application/json")) {
           const json = await res.json();
-          console.error("Unexpected response:", json);
+          console.error("Unexpected JSON response:", json);
+        } else {
+          // Maybe HTML or empty response - just log text instead
+          const text = await res.text();
+          console.error("Unexpected response:", text);
         }
+
       } catch (err) {
         console.error("Error connecting to Spotify:", err);
       }
