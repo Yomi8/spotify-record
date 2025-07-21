@@ -11,6 +11,8 @@ import Search from './pages/Search';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 
+import ConnectSpotify from './pages/ConnectSpotify';
+
 function App() {
   return (
     <Router>
@@ -22,6 +24,7 @@ function App() {
         <Route path="/search" element={<Search />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/connect-spotify" element={<ConnectSpotify />} /> 
       </Routes>
     </Router>
   );

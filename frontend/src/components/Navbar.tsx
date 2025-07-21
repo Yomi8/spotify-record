@@ -40,10 +40,9 @@ export default function Navbar() {
           
               {/* Connect to Spotify Button */}
               <li>
-                <a className="dropdown-item" href="https://yomi16.nz/api/spotify/login">
+                <Link className="dropdown-item" to="/connect-spotify">
                   Connect to Spotify
-                </a>
-                  <i className="bi bi-music-note-list text-danger me-2"></i>Connect to Last.fm
+                </Link>
               </li>
           
               <li><hr className="dropdown-divider" /></li>
