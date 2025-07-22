@@ -103,7 +103,7 @@ def get_spotify_tokens(user_id):
 
 @app.route("/api/spotify/login")
 def spotify_login():
-    token = request.args.get("token")
+    token = request.args.get("access_token")
     if not token:
         return {"msg": "Missing token"}, 401
 
