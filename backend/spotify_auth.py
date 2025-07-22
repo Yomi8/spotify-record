@@ -7,7 +7,7 @@ load_dotenv()
 
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI", "https://yomi16.nz/api/spotify/callback")
+redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
 
 if not client_id or not client_secret:
     raise Exception("SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET not set")
