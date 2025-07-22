@@ -40,9 +40,14 @@ export default function Navbar() {
           
               {/* Connect to Spotify Button */}
               <li>
-                <Link className="dropdown-item" to="/connect-spotify">
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    window.location.href = "https://yomi16.nz/api/spotify/login";
+                  }}
+                >
                   Connect to Spotify
-                </Link>
+                </button>
               </li>
           
               <li><hr className="dropdown-divider" /></li>
