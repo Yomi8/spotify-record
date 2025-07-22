@@ -1,6 +1,6 @@
 # Flask package imports
 from flask import Flask, request, jsonify, redirect, session
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, verify_jwt_in_request
 from flask_cors import CORS
 from flask_rq2 import RQ
 
@@ -102,16 +102,19 @@ def get_spotify_tokens(user_id):
     return run_query(query, (user_id,), fetchone=True, dict_cursor=True)
 
 @app.route("/api/spotify/login")
-@jwt_required()
 def spotify_login():
-    auth0_id = get_jwt_identity()
-    if not auth0_id:
-        return {"msg": "Missing user ID"}, 401
+    token = request.args.get("token")
+    if not token:
+        return {"msg": "Missing token"}, 401
 
-    # Store the user ID in the session temporarily for use in the callback
+    # Manually verify the JWT from the query param
+    try:
+        verify_jwt_in_request(locations=["args"])
+        auth0_id = get_jwt_identity()
+    except Exception as e:
+        return {"msg": "Invalid token"}, 401
+
     session["auth0_id"] = auth0_id
-
-    # Redirect to Spotify's authorization URL
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 

@@ -4,7 +4,12 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 export default function Navbar() {
-  const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
+  const { loginWithRedirect, logout, isAuthenticated, user, getAccessTokenSilently } = useAuth0();
+
+  const handleConnectSpotify = async () => {
+    const token = await getAccessTokenSilently();
+    window.location.href = `https://yomi16.nz/api/spotify/login?token=${token}`;
+  };
 
   return (
     <nav className="navbar navbar-dark bg-dark px-3 justify-content-between">
@@ -42,9 +47,7 @@ export default function Navbar() {
               <li>
                 <button
                   className="dropdown-item"
-                  onClick={() => {
-                    window.location.href = "https://yomi16.nz/api/spotify/login";
-                  }}
+                  onClick={handleConnectSpotify}
                 >
                   Connect to Spotify
                 </button>
