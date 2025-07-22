@@ -135,14 +135,20 @@ def spotify_callback():
     except Exception as e:
         # Remove old tokens if refresh token is revoked
         if "invalid_grant" in str(e):
-            user_id = session.get("user_id")
-            if user_id:
-                run_query("DELETE FROM spotify_tokens WHERE user_id = %s", (user_id,), commit=True)
+            auth0_id = session.get("auth0_id")
+            if auth0_id:
+                user_id = get_user_id_from_auth0(auth0_id)
+                if user_id:
+                    run_query("DELETE FROM spotify_tokens WHERE user_id = %s", (user_id,), commit=True)
         return jsonify({"error": f"Failed to get access token: {str(e)}"}), 500
 
-    user_id = session.get("user_id")
-    if not user_id:
+    auth0_id = session.get("auth0_id")
+    if not auth0_id:
         return jsonify({"error": "Missing user session"}), 400
+
+    user_id = get_user_id_from_auth0(auth0_id)
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
 
     access_token = token_info.get("access_token")
     refresh_token = token_info.get("refresh_token")
