@@ -54,6 +54,11 @@ ucpignGsRTOVhSwDZ+q0OmEmDD8Halv0RWeEMAPHBMLxiLuLTm6U3gN9IEbMo6nU
 vwIDAQAB
 -----END PUBLIC KEY-----
 """
+
+app.config["SESSION_COOKIE_SECURE"] = True  # Only send cookie over HTTPS
+app.config["SESSION_COOKIE_SAMESITE"] = "None"  # Allow cross-site cookies
+app.config["SESSION_COOKIE_DOMAIN"] = "yomi16.nz"  # Set to your domain
+
 jwt = JWTManager(app)
 
 # RQ config
