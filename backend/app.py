@@ -131,7 +131,8 @@ def spotify_callback():
         return jsonify({"error": "Missing authorization code"}), 400
 
     try:
-        token_info = sp_oauth.get_access_token(code, as_dict=True)
+        sp_oauth.get_access_token(code)  # No as_dict
+        token_info = sp_oauth.get_cached_token()
     except Exception as e:
         # Remove old tokens if refresh token is revoked
         if "invalid_grant" in str(e):
