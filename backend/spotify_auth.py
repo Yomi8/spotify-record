@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from spotipy import Spotify
+from spotipy.cache_handler import MemoryCacheHandler
 from spotipy.oauth2 import SpotifyOAuth, SpotifyClientCredentials
 
 load_dotenv()
@@ -22,7 +23,8 @@ sp_oauth = SpotifyOAuth(
     client_secret=client_secret,
     redirect_uri=redirect_uri,
     scope="user-read-recently-played",
-    show_dialog=True
+    show_dialog=True,
+    cache_handler=MemoryCacheHandler()
 )
 
 # Optional helper to get a Spotify client for a specific access token
