@@ -128,13 +128,14 @@ def spotify_login():
 def spotify_callback():
     code = request.args.get("code")
     print(f"Spotify callback code: {code}", flush=True)
+
     try:
+        # This exchanges the code and stores the token in cache
         sp_oauth.get_access_token(code)
         token_info = sp_oauth.get_cached_token()
-        print(f"Token info: {token_info}", flush=True)
+        print(f"Token info: {json.dumps(token_info, indent=2)}", flush=True)
     except Exception as e:
         print(f"Spotify token exchange error: {e}", flush=True)
-        # Remove old tokens if refresh token is revoked
         if "invalid_grant" in str(e):
             auth0_id = session.get("auth0_id")
             if auth0_id:
@@ -154,6 +155,13 @@ def spotify_callback():
     access_token = token_info.get("access_token")
     refresh_token = token_info.get("refresh_token")
     expires_at = token_info.get("expires_at")
+
+    # 🛠 Fallback if refresh_token is missing (Spotify may omit it on reauth)
+    if not refresh_token:
+        existing_tokens = get_spotify_tokens(user_id)
+        if existing_tokens:
+            refresh_token = existing_tokens["refresh_token"]
+            print("Reusing existing refresh token", flush=True)
 
     if not (access_token and refresh_token and expires_at):
         return jsonify({"error": "Incomplete token information"}), 500
