@@ -12,21 +12,34 @@ export default function ConnectSpotify() {
         // Call backend login route with Authorization header
         const res = await fetch("https://yomi16.nz/api/spotify/login", {
           headers: { Authorization: `Bearer ${token}` },
-          redirect: "manual",  // do not auto-follow redirects in fetch
+          redirect: "manual",
         });
 
         if (res.status === 302 || res.status === 301) {
           const redirectUrl = res.headers.get("Location");
           if (redirectUrl) {
             window.location.href = redirectUrl;
+            return;
           } else {
             console.error("Redirect location header missing");
+            return;
           }
-        } else if (res.headers.get("content-type")?.includes("application/json")) {
+        }
+
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
           const json = await res.json();
           console.error("Unexpected JSON response:", json);
+        } else if (contentType.includes("text/html")) {
+          // Try to extract the redirect URL from the HTML
+          const text = await res.text();
+          const match = text.match(/<a href="([^"]+)"/);
+          if (match && match[1]) {
+            window.location.href = match[1];
+            return;
+          }
+          console.error("Unexpected HTML response, could not find redirect URL:", text);
         } else {
-          // Maybe HTML or empty response - just log text instead
           const text = await res.text();
           console.error("Unexpected response:", text);
         }
