@@ -110,7 +110,7 @@ def spotify_login():
 
     # Manually verify the JWT from the query param
     try:
-        verify_jwt_in_request(locations=["args"])
+        verify_jwt_in_request()
         auth0_id = get_jwt_identity()
     except Exception as e:
         return {"msg": "Invalid token"}, 401
