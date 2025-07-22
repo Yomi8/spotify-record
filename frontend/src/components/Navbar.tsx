@@ -8,7 +8,7 @@ export default function Navbar() {
 
   const handleConnectSpotify = async () => {
     const token = await getAccessTokenSilently();
-    window.location.href = `https://yomi16.nz/api/spotify/login?token=${token}`;
+    window.location.href = `https://yomi16.nz/api/spotify/login?access_token=${token}`;
   };
 
   return (
