@@ -41,7 +41,14 @@ export default function ConnectSpotify() {
           console.error("Unexpected HTML response, could not find redirect URL:", text);
         } else {
           const text = await res.text();
-          console.error("Unexpected response:", text);
+          if (!text) {
+            console.error(
+              `Unexpected empty response. Status: ${res.status}, Headers:`,
+              Object.fromEntries(res.headers.entries())
+            );
+          } else {
+            console.error("Unexpected response:", text);
+          }
         }
 
       } catch (err) {
