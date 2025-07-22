@@ -133,6 +133,11 @@ def spotify_callback():
     try:
         token_info = sp_oauth.get_access_token(code)
     except Exception as e:
+        # Remove old tokens if refresh token is revoked
+        if "invalid_grant" in str(e):
+            user_id = session.get("user_id")
+            if user_id:
+                run_query("DELETE FROM spotify_tokens WHERE user_id = %s", (user_id,), commit=True)
         return jsonify({"error": f"Failed to get access token: {str(e)}"}), 500
 
     user_id = session.get("user_id")
