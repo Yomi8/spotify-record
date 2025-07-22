@@ -21,7 +21,8 @@ sp_oauth = SpotifyOAuth(
     client_id=client_id,
     client_secret=client_secret,
     redirect_uri=redirect_uri,
-    scope="user-read-recently-played"
+    scope="user-read-recently-played",
+    show_dialog=True
 )
 
 # Optional helper to get a Spotify client for a specific access token
