@@ -42,6 +42,7 @@ app.config["JWT_TOKEN_LOCATION"] = ["headers"]
 app.config["JWT_ALGORITHM"] = "RS256"
 app.config["JWT_HEADER_NAME"] = "Authorization"
 app.config["JWT_HEADER_TYPE"] = "Bearer"
+app.config["JWT_QUERY_STRING_NAME"] = "access_token"
 app.config["JWT_PUBLIC_KEY"] = """
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyS11srldAwen04iYxtny
