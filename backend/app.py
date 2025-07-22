@@ -38,7 +38,7 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
 # JWT config
-app.config["JWT_TOKEN_LOCATION"] = ["headers"]
+app.config["JWT_TOKEN_LOCATION"] = ["headers", "query_string"]
 app.config["JWT_ALGORITHM"] = "RS256"
 app.config["JWT_HEADER_NAME"] = "Authorization"
 app.config["JWT_HEADER_TYPE"] = "Bearer"
