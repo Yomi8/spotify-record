@@ -127,13 +127,13 @@ def spotify_login():
 @app.route("/api/spotify/callback")
 def spotify_callback():
     code = request.args.get("code")
-    if not code:
-        return jsonify({"error": "Missing authorization code"}), 400
-
+    print(f"Spotify callback code: {code}", flush=True)
     try:
-        sp_oauth.get_access_token(code)  # No as_dict
+        sp_oauth.get_access_token(code)
         token_info = sp_oauth.get_cached_token()
+        print(f"Token info: {token_info}", flush=True)
     except Exception as e:
+        print(f"Spotify token exchange error: {e}", flush=True)
         # Remove old tokens if refresh token is revoked
         if "invalid_grant" in str(e):
             auth0_id = session.get("auth0_id")
