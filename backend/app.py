@@ -121,13 +121,17 @@ def spotify_login():
         return {"msg": "Invalid token"}, 401
 
     session["auth0_id"] = auth0_id
+    print(f"SpotifyOAuth redirect_uri: {sp_oauth.redirect_uri}", flush=True)
     auth_url = sp_oauth.get_authorize_url()
+    print(f"Auth URL: {auth_url}", flush=True)
     return redirect(auth_url)
 
 @app.route("/api/spotify/callback")
 def spotify_callback():
     code = request.args.get("code")
     print(f"Spotify callback code: {code}", flush=True)
+
+    print(f"Handling callback, redirect_uri is: {sp_oauth.redirect_uri}", flush=True)
 
     try:
         # This exchanges the code and stores the token in cache
