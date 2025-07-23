@@ -11,6 +11,23 @@ export default function Navbar() {
     window.location.href = `https://yomi16.nz/api/spotify/login?access_token=${token}`;
   };
 
+  const handleFetchRecent = async () => {
+    const token = await getAccessTokenSilently();
+    try {
+      const res = await fetch('https://yomi16.nz/api/spotify/fetch-recent', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      alert('Recent tracks fetch initiated.');
+    } catch (err) {
+      alert('Error fetching recent tracks.');
+      console.error(err);
+    }
+  };
+
   return (
     <nav className="navbar navbar-dark bg-dark px-3 justify-content-between">
       <div className="d-flex align-items-center gap-4">
@@ -42,17 +59,18 @@ export default function Navbar() {
               <li>{user && <span className="dropdown-item-text">{user.name}</span>}</li>
               <li><Link className="dropdown-item" to="/profile">Profile</Link></li>
               <li><Link className="dropdown-item" to="/settings">Settings</Link></li>
-          
-              {/* Connect to Spotify Button */}
+
               <li>
-                <button
-                  className="dropdown-item"
-                  onClick={handleConnectSpotify}
-                >
+                <button className="dropdown-item" onClick={handleConnectSpotify}>
                   Connect to Spotify
                 </button>
               </li>
-          
+              <li>
+                <button className="dropdown-item" onClick={handleFetchRecent}>
+                  Fetch Recent Tracks
+                </button>
+              </li>
+
               <li><hr className="dropdown-divider" /></li>
               <li>
                 <button className="dropdown-item" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
