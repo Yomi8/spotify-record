@@ -30,6 +30,21 @@ sp_oauth = SpotifyOAuth(
     cache_handler=MemoryCacheHandler()
 )
 
+def save_spotify_tokens(user_id, access_token, refresh_token, expires_at):
+    query = """
+        INSERT INTO spotify_tokens (user_id, access_token, refresh_token, expires_at)
+        VALUES (%s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            access_token = VALUES(access_token),
+            refresh_token = VALUES(refresh_token),
+            expires_at = VALUES(expires_at)
+    """
+    run_query(query, (user_id, access_token, refresh_token, expires_at), commit=True)
+
+def get_spotify_tokens(user_id):
+    query = "SELECT access_token, refresh_token, expires_at FROM spotify_tokens WHERE user_id = %s"
+    return run_query(query, (user_id,), fetchone=True, dict_cursor=True)
+
 def get_user_spotify(auth0_id: str) -> Spotify:
     user = run_query("SELECT id FROM core_users WHERE auth0_id = %s", (auth0_id,), one=True)
     if not user:

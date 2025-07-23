@@ -22,10 +22,9 @@ import requests
 from base64 import b64encode
 import urllib.parse
 
+# Spotipy imports
 from spotipy import Spotify
-from spotify_auth import sp_oauth, get_user_spotify_client
-
-print("Python executing Flask app:", sys.executable)
+from spotify_auth import sp_oauth, save_spotify_tokens, get_spotify_tokens, get_user_spotify_client
 
 SPOTIFY_SCOPES = "user-read-recently-played"
 
@@ -56,9 +55,10 @@ vwIDAQAB
 -----END PUBLIC KEY-----
 """
 
-app.config["SESSION_COOKIE_SECURE"] = True  # Only send cookie over HTTPS
-app.config["SESSION_COOKIE_SAMESITE"] = "None"  # Allow cross-site cookies
-app.config["SESSION_COOKIE_DOMAIN"] = "yomi16.nz"  # Set to your domain
+# Session config
+app.config["SESSION_COOKIE_SECURE"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "None"
+app.config["SESSION_COOKIE_DOMAIN"] = "yomi16.nz"
 
 jwt = JWTManager(app)
 
@@ -66,21 +66,6 @@ jwt = JWTManager(app)
 app.config['RQ_REDIS_URL'] = 'redis://localhost:6379/0'
 redis_conn = Redis.from_url(app.config['RQ_REDIS_URL'])
 rq = RQ(app)
-
-def save_spotify_tokens(user_id, access_token, refresh_token, expires_at):
-    query = """
-        INSERT INTO spotify_tokens (user_id, access_token, refresh_token, expires_at)
-        VALUES (%s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE
-            access_token = VALUES(access_token),
-            refresh_token = VALUES(refresh_token),
-            expires_at = VALUES(expires_at)
-    """
-    run_query(query, (user_id, access_token, refresh_token, expires_at), commit=True)
-
-def get_spotify_tokens(user_id):
-    query = "SELECT access_token, refresh_token, expires_at FROM spotify_tokens WHERE user_id = %s"
-    return run_query(query, (user_id,), fetchone=True, dict_cursor=True)
 
 @app.route("/api/spotify/login")
 def spotify_login():
