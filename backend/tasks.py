@@ -400,7 +400,7 @@ def fetch_recently_played_and_store(user_id):
             conn = db_pool.get_connection()
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE core_users SET spotify_access_token = %s, spotify_expires_at = %s WHERE user_id = %s",
+                "UPDATE spotify_tokens SET access_token = %s, expires_at = %s WHERE user_id = %s",
                 (access_token, expires_at, user_id)
             )
             conn.commit()
