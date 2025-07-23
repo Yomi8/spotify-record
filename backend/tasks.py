@@ -45,6 +45,7 @@ def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=Fals
 def get_spotify_metadata(uri):
     track_id = uri.split(":")[-1]
     try:
+        print("Fetching metadata for track ID:", track_id)
         track = sp_app.track(track_id)
         album = track["album"]
         return {
