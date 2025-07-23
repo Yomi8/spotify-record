@@ -9,14 +9,15 @@ from redis import Redis
 from rq.job import Job
 from tasks import process_spotify_json_file, generate_snapshot_for_period, generate_snapshot_for_range
 
-# Database and utility imports
-import mysql.connector.pooling
-import pendulum
+# Database imports
+from db import run_query, get_user_id_from_auth0
 
+# Utility imports
 import sys
 import os
 import json
 import uuid
+import pendulum
 import requests
 from base64 import b64encode
 import urllib.parse
@@ -65,32 +66,6 @@ jwt = JWTManager(app)
 app.config['RQ_REDIS_URL'] = 'redis://localhost:6379/0'
 redis_conn = Redis.from_url(app.config['RQ_REDIS_URL'])
 rq = RQ(app)
-
-# MySQL config
-db_pool = mysql.connector.pooling.MySQLConnectionPool(
-    pool_name="spotify_pool",
-    pool_size=10,
-    host="127.0.0.1",
-    user="recordserver",
-    password="$3000JHCpaperPC",
-    database="spotifydb"
-)
-
-# Basic query execution
-def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=False):
-    conn = db_pool.get_connection()
-    try:
-        with conn.cursor(dictionary=dict_cursor) as cursor:
-            cursor.execute(query, params or ())
-            result = (
-                cursor.fetchone() if fetchone else
-                cursor.fetchall() if cursor.with_rows else None
-            )
-        if commit:
-            conn.commit()
-        return result
-    finally:
-        conn.close()
 
 def save_spotify_tokens(user_id, access_token, refresh_token, expires_at):
     query = """
@@ -196,16 +171,6 @@ def get_recently_played():
         return jsonify(recent), 200
     except Exception as e:
         return jsonify({"error": "Failed to fetch data", "details": str(e)}), 500
-
-# Translate auth0_id to internal user_id
-def get_user_id_from_auth0(auth0_id):
-    conn = db_pool.get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT user_id FROM core_users WHERE auth0_id = %s", (auth0_id,))
-    row = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return row[0] if row else None
 
 # Check if database is connected
 @app.route('/api/status', methods=['GET'])
