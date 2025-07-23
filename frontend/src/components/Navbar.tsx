@@ -21,6 +21,7 @@ export default function Navbar() {
         }
       });
       const data = await res.json();
+      console.log(data);
       alert('Recent tracks fetch initiated.');
     } catch (err) {
       alert('Error fetching recent tracks.');
