@@ -1,6 +1,6 @@
 import json
 import pendulum
-from spotify_auth import sp_app, get_spotify_tokens, get_user_spotify_client
+from spotify_auth import sp_app, get_spotify_tokens, get_user_spotify_client, refresh_spotify_token
 import mysql.connector.pooling
 import redis
 import os
@@ -382,8 +382,61 @@ def fetch_recently_played_and_store(user_id):
             print(f"No Spotify tokens found for user {user_id}")
             return {"status": "SKIPPED", "reason": "No tokens"}
 
-        sp = get_user_spotify_client(tokens["access_token"])
-        recent_data = sp.current_user_recently_played(limit=50)
+        access_token = tokens["access_token"]
+        refresh_token = tokens["refresh_token"]
+        expires_at = tokens["expires_at"]
+
+        # Check if token is expired
+        if pendulum.now().int_timestamp >= expires_at:
+            print(f"Access token expired for user {user_id}, refreshing...")
+            new_data = refresh_spotify_token(refresh_token)
+            if not new_data:
+                return {"status": "ERROR", "reason": "Failed to refresh token"}
+            access_token = new_data["access_token"]
+            expires_in = new_data.get("expires_in", 3600)
+            expires_at = pendulum.now().int_timestamp + expires_in
+
+            # Save new token to DB
+            conn = db_pool.get_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE core_users SET spotify_access_token = %s, spotify_expires_at = %s WHERE user_id = %s",
+                (access_token, expires_at, user_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+        sp = get_user_spotify_client(access_token)
+
+        # Try getting recently played tracks
+        try:
+            recent_data = sp.current_user_recently_played(limit=50)
+        except Exception as e:
+            if "401" in str(e):  # Token may have just expired
+                print(f"401 error fetching recent tracks. Trying token refresh for user {user_id}...")
+                new_data = refresh_spotify_token(refresh_token)
+                if not new_data:
+                    return {"status": "ERROR", "reason": "Failed to refresh token on retry"}
+                access_token = new_data["access_token"]
+                expires_at = pendulum.now().int_timestamp + new_data.get("expires_in", 3600)
+
+                # Save new token to DB
+                conn = db_pool.get_connection()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE core_users SET spotify_access_token = %s, spotify_expires_at = %s WHERE user_id = %s",
+                    (access_token, expires_at, user_id)
+                )
+                conn.commit()
+                cursor.close()
+                conn.close()
+
+                # Retry with new client
+                sp = get_user_spotify_client(access_token)
+                recent_data = sp.current_user_recently_played(limit=50)
+            else:
+                raise
 
         if not recent_data or "items" not in recent_data:
             return {"status": "SKIPPED", "reason": "No recent plays"}
@@ -398,7 +451,6 @@ def fetch_recently_played_and_store(user_id):
             track = item["track"]
             track_uri = track["uri"]
 
-            # Check for existing log
             cursor.execute(
                 "SELECT 1 FROM usage_logs WHERE user_id = %s AND ts = %s",
                 (user_id, ts)
@@ -407,7 +459,6 @@ def fetch_recently_played_and_store(user_id):
                 skipped += 1
                 continue
 
-            # Check for song metadata
             cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri = %s", (track_uri,))
             song_row = cursor.fetchone()
             if song_row:
@@ -444,7 +495,6 @@ def fetch_recently_played_and_store(user_id):
                 ))
                 song_id = cursor.lastrowid
 
-            # Insert new usage log
             cursor.execute("""
                 INSERT INTO usage_logs (
                     user_id, song_id, ts, ms_played, platform, conn_country,
@@ -454,8 +504,8 @@ def fetch_recently_played_and_store(user_id):
                 user_id,
                 song_id,
                 ts,
-                item.get("ms_played", metadata["duration_ms"]),  # fallback if ms_played missing
-                "spotify",  # or item.get("context", {}).get("type")
+                item.get("ms_played", metadata["duration_ms"]),
+                "spotify",
                 None,
                 track_uri,
                 "recent_play",

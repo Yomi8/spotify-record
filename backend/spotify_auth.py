@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from spotipy import Spotify
 from spotipy.cache_handler import MemoryCacheHandler
 from spotipy.oauth2 import SpotifyOAuth, SpotifyClientCredentials
-
+import requests
 import time
 from db import run_query
 
@@ -44,6 +44,19 @@ def save_spotify_tokens(user_id, access_token, refresh_token, expires_at):
 def get_spotify_tokens(user_id):
     query = "SELECT access_token, refresh_token, expires_at FROM spotify_tokens WHERE user_id = %s"
     return run_query(query, (user_id,), fetchone=True, dict_cursor=True)
+
+def refresh_spotify_token(refresh_token):
+    response = requests.post("https://accounts.spotify.com/api/token", data={
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        "client_id": client_id,
+        "client_secret": client_secret,
+    })
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise Exception("Failed to refresh Spotify token")
 
 def get_user_spotify(auth0_id: str) -> Spotify:
     user = run_query("SELECT id FROM core_users WHERE auth0_id = %s", (auth0_id,), one=True)
