@@ -7,7 +7,7 @@ from flask_rq2 import RQ
 # Worker imports
 from redis import Redis
 from rq.job import Job
-from tasks import process_spotify_json_file, generate_snapshot_for_period, generate_snapshot_for_range
+from tasks import process_spotify_json_file, generate_snapshot_for_period, generate_snapshot_for_range, fetch_recently_played_and_store
 
 # Database imports
 from db import run_query, get_user_id_from_auth0
@@ -236,6 +236,23 @@ def upload_spotify_json():
     job = queue.enqueue(process_spotify_json_file, filepath, user_id)
 
     return jsonify({"status": "queued", "job_id": job.id}), 202
+
+# Call spotify to fetch recently played tracks
+@app.route("/api/spotify/fetch-recent", methods=["POST"])
+@jwt_required()
+def trigger_fetch_recent():
+    auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id)
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
+
+    queue = rq.get_queue("recent_queue")  # Matches worker queue name
+    job = queue.enqueue(fetch_recently_played_and_store, user_id)
+
+    return jsonify({
+        "status": "queued",
+        "job_id": job.id
+    }), 202
 
 def enrich_snapshot(snapshot):
     # Most played song

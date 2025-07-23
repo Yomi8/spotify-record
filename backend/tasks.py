@@ -1,9 +1,10 @@
 import json
 import pendulum
-from spotify_auth import sp_app
+from spotify_auth import sp_app, get_spotify_tokens, get_user_spotify_client
 import mysql.connector.pooling
 import redis
 import os
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -179,7 +180,6 @@ def process_spotify_json_file(file_path, user_id):
         print(f"Error in process_spotify_json_file: {e}")
         raise
 
-
 def get_range_bounds(now, range_type):
     if range_type == 'day':
         return now.subtract(days=1), now
@@ -192,12 +192,10 @@ def get_range_bounds(now, range_type):
     else:
         raise ValueError(f"Unknown range type: {range_type}")
 
-
 def get_user_lifetime_range(cursor, user_id):
     cursor.execute("SELECT MIN(ts) AS start, MAX(ts) AS end FROM usage_logs WHERE user_id = %s", (user_id,))
     row = cursor.fetchone()
     return row['start'], row['end']
-
 
 def calculate_longest_binge(rows):
     if not rows: return None, 0, None, None
@@ -227,7 +225,6 @@ def calculate_longest_binge(rows):
         max_start, max_end = current_start, rows[-1]['ts']
 
     return max_song, max_count, max_start, max_end
-
 
 def get_snapshot_data(cursor, user_id, start, end):
     cursor.execute("""
@@ -272,7 +269,6 @@ def get_snapshot_data(cursor, user_id, start, end):
         "binge_start": binge_start,
         "binge_end": binge_end,
     }
-
 
 # 1. Automated Period Snapshot (day/week/month/year/lifetime)
 def generate_snapshot_for_period(user_id, period):
@@ -353,7 +349,7 @@ def generate_snapshot_for_period(user_id, period):
     finally:
         redis_conn.delete(redis_key)
         print(f"Snapshot generation complete for user {user_id} period {period}")
-        
+ 
 # 2. Custom Range Snapshot (API input or manual)
 def generate_snapshot_for_range(user_id, start, end):
     conn = db_pool.get_connection()
@@ -377,3 +373,110 @@ def generate_snapshot_for_range(user_id, start, end):
     cursor.close()
     conn.close()
     return {"user_id": user_id, "range_type": "custom", "range_start": start, "range_end": end}
+
+def fetch_recently_played_and_store(user_id):
+    print(f"Fetching recent plays for user {user_id}")
+    try:
+        tokens = get_spotify_tokens(user_id)
+        if not tokens:
+            print(f"No Spotify tokens found for user {user_id}")
+            return {"status": "SKIPPED", "reason": "No tokens"}
+
+        sp = get_user_spotify_client(tokens["access_token"])
+        recent_data = sp.current_user_recently_played(limit=50)
+
+        if not recent_data or "items" not in recent_data:
+            return {"status": "SKIPPED", "reason": "No recent plays"}
+
+        inserted = 0
+        skipped = 0
+        conn = db_pool.get_connection()
+        cursor = conn.cursor()
+
+        for item in recent_data["items"]:
+            ts = pendulum.parse(item["played_at"]).to_datetime_string()
+            track = item["track"]
+            track_uri = track["uri"]
+
+            # Check for existing log
+            cursor.execute(
+                "SELECT 1 FROM usage_logs WHERE user_id = %s AND ts = %s",
+                (user_id, ts)
+            )
+            if cursor.fetchone():
+                skipped += 1
+                continue
+
+            # Check for song metadata
+            cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri = %s", (track_uri,))
+            song_row = cursor.fetchone()
+            if song_row:
+                song_id = song_row[0]
+            else:
+                metadata = get_spotify_metadata(track_uri)
+                if not metadata:
+                    continue
+                cursor.execute("""
+                    INSERT INTO core_songs (
+                        spotify_uri, track_name, artist_name, artist_id,
+                        album_name, album_id, album_type, album_uri,
+                        release_date, release_date_precision,
+                        duration_ms, is_explicit,
+                        image_url, preview_url, popularity, is_local
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    track_uri,
+                    metadata["track_name"],
+                    metadata["artist_name"],
+                    metadata["artist_id"],
+                    metadata["album_name"],
+                    metadata["album_id"],
+                    metadata["album_type"],
+                    metadata["album_uri"],
+                    metadata["release_date"],
+                    metadata["release_date_precision"],
+                    metadata["duration_ms"],
+                    int(metadata["is_explicit"]),
+                    metadata["image_url"],
+                    metadata["preview_url"],
+                    metadata["popularity"],
+                    int(metadata["is_local"]),
+                ))
+                song_id = cursor.lastrowid
+
+            # Insert new usage log
+            cursor.execute("""
+                INSERT INTO usage_logs (
+                    user_id, song_id, ts, ms_played, platform, conn_country,
+                    spotify_track_uri, reason_start, reason_end, shuffle, skipped
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                user_id,
+                song_id,
+                ts,
+                item.get("ms_played", metadata["duration_ms"]),  # fallback if ms_played missing
+                "spotify",  # or item.get("context", {}).get("type")
+                None,
+                track_uri,
+                "recent_play",
+                "track_done",
+                False,
+                False,
+            ))
+
+            inserted += 1
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return {
+            "status": "COMPLETE",
+            "inserted": inserted,
+            "skipped": skipped,
+            "user_id": user_id
+        }
+
+    except Exception as e:
+        print(f"Error in fetch_recently_played_and_store: {e}")
+        raise
