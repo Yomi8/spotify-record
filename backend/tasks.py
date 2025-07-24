@@ -468,6 +468,14 @@ def fetch_recently_played_and_store(user_id):
             track_uri = track["uri"]
 
             cursor.execute(
+                "SELECT 1 FROM usage_logs WHERE user_id = %s AND ts = %s",
+                (user_id, ts)
+            )
+            if cursor.fetchone():
+                skipped += 1
+                continue
+
+            cursor.execute(
                 "SELECT song_id, duration_ms FROM core_songs WHERE spotify_uri = %s", (track_uri,)
             )
             song_row = cursor.fetchone()
