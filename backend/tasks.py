@@ -468,17 +468,12 @@ def fetch_recently_played_and_store(user_id):
             track_uri = track["uri"]
 
             cursor.execute(
-                "SELECT 1 FROM usage_logs WHERE user_id = %s AND ts = %s",
-                (user_id, ts)
+                "SELECT song_id, duration_ms FROM core_songs WHERE spotify_uri = %s", (track_uri,)
             )
-            if cursor.fetchone():
-                skipped += 1
-                continue
-
-            cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri = %s", (track_uri,))
             song_row = cursor.fetchone()
             if song_row:
                 song_id = song_row[0]
+                duration_ms = song_row[1]
             else:
                 metadata = get_spotify_metadata(track_uri)
                 if not metadata:
@@ -510,6 +505,7 @@ def fetch_recently_played_and_store(user_id):
                     int(metadata["is_local"]),
                 ))
                 song_id = cursor.lastrowid
+                duration_ms = metadata["duration_ms"]
 
             cursor.execute("""
                 INSERT INTO usage_logs (
@@ -520,7 +516,7 @@ def fetch_recently_played_and_store(user_id):
                 user_id,
                 song_id,
                 ts,
-                item.get("ms_played", metadata["duration_ms"]),
+                item.get("ms_played", duration_ms),
                 "spotify",
                 None,
                 track_uri,
