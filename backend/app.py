@@ -361,6 +361,8 @@ def get_latest_snapshot(period):
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id)
 
+    print("Getting latest snapshot for user:", user_id, "period:", period, flush=True)
+
     redis_key = f"snapshot_job:{user_id}:{period}"
     now = pendulum.now("UTC")
 
