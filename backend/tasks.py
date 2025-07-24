@@ -6,6 +6,21 @@ import redis
 import os
 import time
 from dotenv import load_dotenv
+import logging
+import sys
+
+# Configure global logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),  # output to stdout
+        logging.FileHandler("spotify_tasks.log"),  # optional log file
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
 
 load_dotenv()
 
@@ -45,7 +60,7 @@ def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=Fals
 def get_spotify_metadata(uri):
     track_id = uri.split(":")[-1]
     try:
-        print("Fetching metadata for track ID:", track_id)
+        logger.info("Fetching metadata for track ID:", track_id)
         track = sp_app.track(track_id)
         album = track["album"]
         return {
@@ -66,7 +81,7 @@ def get_spotify_metadata(uri):
             "is_local": track.get("is_local", False)
         }
     except Exception as e:
-        print(f"Error fetching track metadata for URI {uri}: {e}")
+        logger.error(f"Error fetching track metadata for URI {uri}: {e}")
         return None
 
 def process_spotify_json_file(file_path, user_id):
@@ -84,7 +99,7 @@ def process_spotify_json_file(file_path, user_id):
         total = len(data)
         for index, entry in enumerate(data):
             # Progress logging (optional)
-            print(f"Processing entry {index + 1} of {total}, inserted so far: {inserted}")
+            logger.info(f"Processing entry {index + 1} of {total}, inserted so far: {inserted}")
 
             ts_str = entry.get("ts")
             track_uri = entry.get("spotify_track_uri")
@@ -178,7 +193,7 @@ def process_spotify_json_file(file_path, user_id):
 
     except Exception as e:
         # Log error and re-raise for visibility
-        print(f"Error in process_spotify_json_file: {e}")
+        logger.error(f"Error in process_spotify_json_file: {e}")
         raise
 
 def get_range_bounds(now, range_type):
@@ -273,7 +288,7 @@ def get_snapshot_data(cursor, user_id, start, end):
 
 # 1. Automated Period Snapshot (day/week/month/year/lifetime)
 def generate_snapshot_for_period(user_id, period):
-    print(f"Starting snapshot generation for user {user_id} period {period}")
+    logger.info(f"Starting snapshot generation for user {user_id} period {period}")
     redis_key = f"snapshot_job:{user_id}:{period}"
 
     now = pendulum.now("UTC")  # <-- Always use UTC
@@ -284,7 +299,7 @@ def generate_snapshot_for_period(user_id, period):
                 if period == "lifetime":
                     start, end = get_user_lifetime_range(cursor, user_id)
                     if not start or not end:
-                        print(f"No usage logs for user {user_id}, skipping lifetime snapshot")
+                        logger.warning(f"No usage logs for user {user_id}, skipping lifetime snapshot")
                         return
                 else:
                     start, end = get_range_bounds(now, period)
@@ -341,15 +356,15 @@ def generate_snapshot_for_period(user_id, period):
                     commit=True,
                 )
 
-                print(f"Snapshot generated for user {user_id} ({period}) at {snapshot_data['snapshot_time']}")
+                logger.info(f"Snapshot generated for user {user_id} ({period}) at {snapshot_data['snapshot_time']}")
 
     except Exception as e:
-        print(f"Error generating snapshot for user {user_id} ({period}): {e}")
+        logger.error(f"Error generating snapshot for user {user_id} ({period}): {e}")
         raise
 
     finally:
         redis_conn.delete(redis_key)
-        print(f"Snapshot generation complete for user {user_id} period {period}")
+        logger.info(f"Snapshot generation complete for user {user_id} period {period}")
  
 # 2. Custom Range Snapshot (API input or manual)
 def generate_snapshot_for_range(user_id, start, end):
@@ -376,11 +391,11 @@ def generate_snapshot_for_range(user_id, start, end):
     return {"user_id": user_id, "range_type": "custom", "range_start": start, "range_end": end}
 
 def fetch_recently_played_and_store(user_id):
-    print(f"Fetching recent plays for user {user_id}")
+    logger.info(f"Fetching recent plays for user {user_id}")
     try:
         tokens = get_spotify_tokens(user_id)
         if not tokens:
-            print(f"No Spotify tokens found for user {user_id}")
+            logger.warning(f"No Spotify tokens found for user {user_id}")
             return {"status": "SKIPPED", "reason": "No tokens"}
 
         access_token = tokens["access_token"]
@@ -389,7 +404,7 @@ def fetch_recently_played_and_store(user_id):
 
         # Check if token is expired
         if pendulum.now().int_timestamp >= expires_at:
-            print(f"Access token expired for user {user_id}, refreshing...")
+            logger.info(f"Access token expired for user {user_id}, refreshing...")
             new_data = refresh_spotify_token(refresh_token)
             if not new_data:
                 return {"status": "ERROR", "reason": "Failed to refresh token"}
@@ -415,7 +430,7 @@ def fetch_recently_played_and_store(user_id):
             recent_data = sp.current_user_recently_played(limit=50)
         except Exception as e:
             if "401" in str(e):  # Token may have just expired
-                print(f"401 error fetching recent tracks. Trying token refresh for user {user_id}...")
+                logger.warning(f"401 error fetching recent tracks. Trying token refresh for user {user_id}...")
                 new_data = refresh_spotify_token(refresh_token)
                 if not new_data:
                     return {"status": "ERROR", "reason": "Failed to refresh token on retry"}
@@ -529,5 +544,5 @@ def fetch_recently_played_and_store(user_id):
         }
 
     except Exception as e:
-        print(f"Error in fetch_recently_played_and_store: {e}")
+        logger.error(f"Error in fetch_recently_played_and_store: {e}")
         raise
