@@ -10,6 +10,7 @@ import List from './pages/Lists';
 import Search from './pages/Search';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
+import SongDetails from './pages/SongDetails';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/list" element={<List />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/song/:songId" element={<SongDetails />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
       </Routes>

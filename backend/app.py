@@ -421,5 +421,47 @@ def get_latest_snapshot(period):
         "job_id": job.id
     }), 202
 
+@app.route('/api/search', methods=['GET'])
+def search_songs_artists():
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify({"error": "Missing search query"}), 400
+
+    # Search both songs and artists (case-insensitive, partial match)
+    results = run_query("""
+        SELECT song_id, track_name, artist_name, image_url
+        FROM core_songs
+        WHERE track_name LIKE %s OR artist_name LIKE %s
+        LIMIT 30
+    """, (f"%{query}%", f"%{query}%"), dict_cursor=True)
+
+    return jsonify({"results": results}), 200
+
+@app.route('/api/song/<song_id>', methods=['GET'])
+def get_song_details(song_id):
+    # Get song info
+    song = run_query("""
+        SELECT song_id, track_name, artist_name, image_url
+        FROM core_songs
+        WHERE song_id = %s
+    """, (song_id,), fetchone=True, dict_cursor=True)
+
+    if not song:
+        return jsonify({"error": "Song not found"}), 404
+
+    # Get stats: first/last played, play count, longest binge
+    stats = run_query("""
+        SELECT
+            MIN(play_time) AS first_played,
+            MAX(play_time) AS last_played,
+            COUNT(*) AS play_count,
+            MAX(binge_length) AS longest_binge
+        FROM user_song_plays
+        WHERE song_id = %s
+    """, (song_id,), fetchone=True, dict_cursor=True)
+
+    song.update(stats or {})
+    return jsonify(song), 200
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
