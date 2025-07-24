@@ -449,18 +449,20 @@ def get_song_details(song_id):
     if not song:
         return jsonify({"error": "Song not found"}), 404
 
-    # Get stats: first/last played, play count, longest binge
+    # Calculate stats from usage_logs using ts
     stats = run_query("""
         SELECT
-            MIN(play_time) AS first_played,
-            MAX(play_time) AS last_played,
-            COUNT(*) AS play_count,
-            MAX(binge_length) AS longest_binge
-        FROM user_song_plays
+            MIN(ts) AS first_played,
+            MAX(ts) AS last_played,
+            COUNT(*) AS play_count
+        FROM usage_logs
         WHERE song_id = %s
     """, (song_id,), fetchone=True, dict_cursor=True)
 
+    # Optionally, implement longest binge logic here if you define it
     song.update(stats or {})
+    song["longest_binge"] = None  # Placeholder for now
+
     return jsonify(song), 200
 
 if __name__ == "__main__":
