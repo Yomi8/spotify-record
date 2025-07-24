@@ -6,10 +6,11 @@ from tasks import fetch_recently_played_and_store
 scheduler = Scheduler(connection=Redis())
 job_id = "fetch_recent_every_30min"
 
-# Cancel duplicate if somehow it's stuck
-existing_job = scheduler.job_registry.get(job_id)
-if existing_job:
-    print("Job already scheduled.")
+existing_jobs = scheduler.get_jobs()
+for job in existing_jobs:
+    if job.id == job_id:
+        print(f"Job {job_id} already exists, skipping.")
+        break
 else:
     scheduler.schedule(
         scheduled_time=pendulum.now().add(seconds=5),
