@@ -24,7 +24,7 @@ import urllib.parse
 
 # Spotipy imports
 from spotipy import Spotify
-from spotify_auth import sp_oauth, save_spotify_tokens, get_spotify_tokens, get_user_spotify_client, client_id, client_secret, redirect_uri
+from spotify_auth import save_spotify_tokens, get_spotify_tokens, get_user_spotify_client, client_id, client_secret, redirect_uri
 from spotipy.oauth2 import SpotifyOAuth
 
 SPOTIFY_SCOPES = "user-read-recently-played"
@@ -68,13 +68,22 @@ app.config['RQ_REDIS_URL'] = 'redis://localhost:6379/0'
 redis_conn = Redis.from_url(app.config['RQ_REDIS_URL'])
 rq = RQ(app)
 
+def get_local_spotify_oauth(scope=SPOTIFY_SCOPES):
+    return SpotifyOAuth(
+        client_id=client_id,
+        client_secret=client_secret,
+        redirect_uri=redirect_uri,
+        scope=scope,
+        show_dialog=True,
+        cache_handler=None
+    )
+
 @app.route("/api/spotify/login")
 def spotify_login():
     token = request.args.get("access_token")
     if not token:
         return {"msg": "Missing token"}, 401
 
-    # Manually verify the JWT from the query param
     try:
         verify_jwt_in_request()
         auth0_id = get_jwt_identity()
@@ -82,8 +91,10 @@ def spotify_login():
         return {"msg": "Invalid token"}, 401
 
     session["auth0_id"] = auth0_id
-    print(f"SpotifyOAuth redirect_uri: {sp_oauth.redirect_uri}", flush=True)
-    auth_url = sp_oauth.get_authorize_url()
+
+    # Create a new SpotifyOAuth instance for this request
+    sp_oauth_local = get_local_spotify_oauth()
+    auth_url = sp_oauth_local.get_authorize_url()
     print(f"Auth URL: {auth_url}", flush=True)
     return redirect(auth_url)
 
@@ -93,14 +104,7 @@ def spotify_callback():
     print(f"Spotify callback code: {code}", flush=True)
 
     # Create a new SpotifyOAuth instance for this request
-    sp_oauth_local = SpotifyOAuth(
-        client_id=client_id,
-        client_secret=client_secret,
-        redirect_uri=redirect_uri,
-        scope="user-read-recently-played",
-        show_dialog=True,
-        cache_handler=None  # Don't use MemoryCacheHandler
-    )
+    sp_oauth_local = get_local_spotify_oauth("user-read-recently-played")
 
     try:
         token_info = sp_oauth_local.get_access_token(code)
