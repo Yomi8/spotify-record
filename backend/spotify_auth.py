@@ -20,16 +20,6 @@ if not client_id or not client_secret:
 app_auth_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 sp_app = Spotify(auth_manager=app_auth_manager)
 
-# Used for user-specific actions (e.g., recent plays)
-sp_oauth = SpotifyOAuth(
-    client_id=client_id,
-    client_secret=client_secret,
-    redirect_uri=redirect_uri,
-    scope="user-read-recently-played",
-    show_dialog=True,
-    cache_handler=MemoryCacheHandler()
-)
-
 def save_spotify_tokens(user_id, access_token, refresh_token, expires_at):
     query = """
         INSERT INTO spotify_tokens (user_id, access_token, refresh_token, expires_at)
@@ -59,45 +49,29 @@ def refresh_spotify_token(refresh_token):
         raise Exception("Failed to refresh Spotify token")
 
 def get_user_spotify(auth0_id: str) -> Spotify:
-    user = run_query("SELECT id FROM core_users WHERE auth0_id = %s", (auth0_id,), one=True)
+    user = run_query("SELECT id FROM core_users WHERE auth0_id = %s", (auth0_id,), fetchone=True, dict_cursor=True)
     if not user:
         raise Exception("User not found")
     user_id = user["id"]
 
-    tokens = run_query(
-        "SELECT access_token, refresh_token, expires_at FROM spotify_tokens WHERE user_id = %s",
-        (user_id,), one=True
-    )
+    tokens = get_spotify_tokens(user_id)
     if not tokens:
         raise Exception("Spotify tokens not found")
 
-    sp_oauth.token_info = {
-        "access_token": tokens["access_token"],
-        "refresh_token": tokens["refresh_token"],
-        "expires_at": tokens["expires_at"],
-        "scope": "user-read-recently-played",
-        "token_type": "Bearer"
-    }
-
+    # Refresh token if expired
     if tokens["expires_at"] < int(time.time()):
-        new_token = sp_oauth.refresh_access_token(tokens["refresh_token"])
-
-        run_query("""
-            UPDATE spotify_tokens
-            SET access_token = %s,
-                refresh_token = %s,
-                expires_at = %s
-            WHERE user_id = %s
-        """, (
+        new_token = refresh_spotify_token(tokens["refresh_token"])
+        save_spotify_tokens(
+            user_id,
             new_token["access_token"],
             new_token.get("refresh_token", tokens["refresh_token"]),
-            new_token["expires_at"],
-            user_id
-        ), commit=True)
+            new_token["expires_at"]
+        )
+        access_token = new_token["access_token"]
+    else:
+        access_token = tokens["access_token"]
 
-        sp_oauth.token_info = new_token
-
-    return Spotify(auth=sp_oauth.get_access_token(as_dict=False))
+    return Spotify(auth=access_token)
 
 # Optional helper to get a Spotify client for a specific access token
 def get_user_spotify_client(access_token: str) -> Spotify:

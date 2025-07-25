@@ -24,7 +24,8 @@ import urllib.parse
 
 # Spotipy imports
 from spotipy import Spotify
-from spotify_auth import sp_oauth, save_spotify_tokens, get_spotify_tokens, get_user_spotify_client
+from spotify_auth import sp_oauth, save_spotify_tokens, get_spotify_tokens, get_user_spotify_client, client_id, client_secret, redirect_uri
+from spotipy.oauth2 import SpotifyOAuth
 
 SPOTIFY_SCOPES = "user-read-recently-played"
 
@@ -91,12 +92,18 @@ def spotify_callback():
     code = request.args.get("code")
     print(f"Spotify callback code: {code}", flush=True)
 
-    print(f"Handling callback, redirect_uri is: {sp_oauth.redirect_uri}", flush=True)
+    # Create a new SpotifyOAuth instance for this request
+    sp_oauth_local = SpotifyOAuth(
+        client_id=client_id,
+        client_secret=client_secret,
+        redirect_uri=redirect_uri,
+        scope="user-read-recently-played",
+        show_dialog=True,
+        cache_handler=None  # Don't use MemoryCacheHandler
+    )
 
     try:
-        # This exchanges the code and stores the token in cache
-        sp_oauth.get_access_token(code)
-        token_info = sp_oauth.get_cached_token()
+        token_info = sp_oauth_local.get_access_token(code)
         print(f"Token info: {json.dumps(token_info, indent=2)}", flush=True)
     except Exception as e:
         print(f"Spotify token exchange error: {e}", flush=True)
