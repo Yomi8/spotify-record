@@ -471,9 +471,27 @@ def search_songs_artists():
 
 @app.route('/api/song/<song_id>', methods=['GET'])
 def get_song_details(song_id):
-    # Get song info
+    # Get song info with extended details
     song = run_query("""
-        SELECT song_id, track_name, artist_name, image_url
+        SELECT 
+            song_id,
+            spotify_uri,
+            track_name,
+            artist_name,
+            artist_id,
+            album_name,
+            album_id,
+            album_type,
+            album_uri,
+            release_date,
+            release_date_precision,
+            duration_ms,
+            is_explicit,
+            image_url,
+            preview_url,
+            popularity,
+            is_local,
+            created_at
         FROM core_songs
         WHERE song_id = %s
     """, (song_id,), fetchone=True, dict_cursor=True)
@@ -486,14 +504,33 @@ def get_song_details(song_id):
         SELECT
             MIN(ts) AS first_played,
             MAX(ts) AS last_played,
-            COUNT(*) AS play_count
+            COUNT(*) AS play_count,
+            COUNT(DISTINCT DATE(ts)) as days_played
         FROM usage_logs
         WHERE song_id = %s
     """, (song_id,), fetchone=True, dict_cursor=True)
 
-    # Optionally, implement longest binge logic here if you define it
+    # Calculate longest binge
+    binge_stats = run_query("""
+        SELECT COUNT(*) as binge_count
+        FROM (
+            SELECT COUNT(*) as consecutive_plays
+            FROM (
+                SELECT ts,
+                    LAG(ts) OVER (ORDER BY ts) as prev_ts
+                FROM usage_logs
+                WHERE song_id = %s
+                ORDER BY ts
+            ) t
+            WHERE TIMESTAMPDIFF(MINUTE, prev_ts, ts) <= 30
+            GROUP BY DATE_FORMAT(ts, '%Y-%m-%d %H:%i')
+        ) b
+        ORDER BY binge_count DESC
+        LIMIT 1
+    """, (song_id,), fetchone=True, dict_cursor=True)
+
     song.update(stats or {})
-    song["longest_binge"] = None  # Placeholder for now
+    song["longest_binge"] = binge_stats["binge_count"] if binge_stats else 0
 
     return jsonify(song), 200
 
