@@ -147,6 +147,12 @@ def spotify_callback():
         print(f"[DEBUG] Saving tokens for user_id={user_id}")
         print(f"[DEBUG] access_token={access_token[:10]}..., refresh_token={refresh_token[:10]}..., expires_at={expires_at}", flush=True)
         save_spotify_tokens(user_id, access_token, refresh_token, expires_at)
+        
+        # New code to fetch and print Spotify profile information
+        sp = Spotify(auth=access_token)
+        profile = sp.current_user()
+        print(f"[DEBUG] Spotify profile for user_id={user_id}: {profile['email']} ({profile['id']})", flush=True)
+        
         return redirect("/")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
