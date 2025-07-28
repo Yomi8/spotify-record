@@ -27,7 +27,7 @@ from spotipy import Spotify
 from spotify_auth import save_spotify_tokens, get_spotify_tokens, get_user_spotify_client, client_id, client_secret, redirect_uri
 from spotipy.oauth2 import SpotifyOAuth
 
-SPOTIFY_SCOPES = "user-read-recently-played"
+SPOTIFY_SCOPES = "user-read-recently-played user-read-email"
 
 app = Flask(__name__)
 CORS(app, origins=["https://yomi16.nz", "http://127.0.0.1:3000"], supports_credentials=True)
