@@ -102,8 +102,8 @@ def spotify_login():
 def spotify_callback():
     code = request.args.get("code")
     print(f"Spotify callback code: {code}", flush=True)
+    print(f"Session contents: {dict(session)}", flush=True)
 
-    # Create a new SpotifyOAuth instance for this request
     sp_oauth_local = get_local_spotify_oauth("user-read-recently-played")
 
     try:
@@ -120,18 +120,19 @@ def spotify_callback():
         return jsonify({"error": f"Failed to get access token: {str(e)}"}), 500
 
     auth0_id = session.get("auth0_id")
+    print(f"auth0_id from session: {auth0_id}", flush=True)
     if not auth0_id:
         return jsonify({"error": "Missing user session"}), 400
 
     user_id = get_user_id_from_auth0(auth0_id)
+    print(f"user_id from db: {user_id}", flush=True)
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
     access_token = token_info.get("access_token")
     refresh_token = token_info.get("refresh_token")
     expires_at = token_info.get("expires_at")
-
-    # 🛠 Fallback if refresh_token is missing (Spotify may omit it on reauth)
+    
     if not refresh_token:
         existing_tokens = get_spotify_tokens(user_id)
         if existing_tokens:
