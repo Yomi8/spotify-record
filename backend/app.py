@@ -135,6 +135,7 @@ def spotify_callback():
     
     if not refresh_token:
         existing_tokens = get_spotify_tokens(user_id)
+        print(f"[DEBUG] Existing tokens for user_id={user_id}: {existing_tokens}", flush=True)
         if existing_tokens:
             refresh_token = existing_tokens["refresh_token"]
             print("Reusing existing refresh token", flush=True)
@@ -143,6 +144,8 @@ def spotify_callback():
         return jsonify({"error": "Incomplete token information"}), 500
 
     try:
+        print(f"[DEBUG] Saving tokens for user_id={user_id}")
+        print(f"[DEBUG] access_token={access_token[:10]}..., refresh_token={refresh_token[:10]}..., expires_at={expires_at}", flush=True)
         save_spotify_tokens(user_id, access_token, refresh_token, expires_at)
         return redirect("/")
     except Exception as e:
