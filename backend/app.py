@@ -108,7 +108,7 @@ def spotify_callback():
 
     try:
         token_info = sp_oauth_local.get_access_token(code)
-        print(f"Token info: {json.dumps(token_info, indent=2)}", flush=True)
+        print(f"[DEBUG] token_info: {json.dumps(token_info, indent=2)}", flush=True)
     except Exception as e:
         print(f"Spotify token exchange error: {e}", flush=True)
         if "invalid_grant" in str(e):
