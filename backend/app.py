@@ -151,7 +151,8 @@ def spotify_callback():
         # New code to fetch and print Spotify profile information
         sp = Spotify(auth=access_token)
         profile = sp.current_user()
-        print(f"[DEBUG] Spotify profile for user_id={user_id}: {profile['email']} ({profile['id']})", flush=True)
+        email = profile.get("email", "N/A")
+        print(f"[DEBUG] Spotify profile for user_id={user_id}: {email} ({profile['id']})", flush=True)
         
         return redirect("/")
     except Exception as e:
