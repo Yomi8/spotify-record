@@ -26,6 +26,7 @@ import urllib.parse
 from spotipy import Spotify
 from spotify_auth import save_spotify_tokens, get_spotify_tokens, get_user_spotify_client, client_id, client_secret, redirect_uri
 from spotipy.oauth2 import SpotifyOAuth
+from spotipy.cache_handler import CacheHandler
 
 SPOTIFY_SCOPES = "user-read-recently-played user-read-email"
 
@@ -68,7 +69,7 @@ app.config['RQ_REDIS_URL'] = 'redis://localhost:6379/0'
 redis_conn = Redis.from_url(app.config['RQ_REDIS_URL'])
 rq = RQ(app)
 
-class NoCacheHandler():
+class NoCacheHandler(CacheHandler):
     def get_cached_token(self):
         return None
     
