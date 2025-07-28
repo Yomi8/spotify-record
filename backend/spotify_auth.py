@@ -1,8 +1,7 @@
 import os
 from dotenv import load_dotenv
 from spotipy import Spotify
-from spotipy.cache_handler import MemoryCacheHandler
-from spotipy.oauth2 import SpotifyOAuth, SpotifyClientCredentials
+from spotipy.oauth2 import SpotifyClientCredentials
 import requests
 import time
 from db import run_query

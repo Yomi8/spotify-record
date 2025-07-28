@@ -68,6 +68,13 @@ app.config['RQ_REDIS_URL'] = 'redis://localhost:6379/0'
 redis_conn = Redis.from_url(app.config['RQ_REDIS_URL'])
 rq = RQ(app)
 
+class NoCacheHandler():
+    def get_cached_token(self):
+        return None
+    
+    def save_token_to_cache(self, token_info):
+        pass
+
 def get_local_spotify_oauth(scope=SPOTIFY_SCOPES):
     return SpotifyOAuth(
         client_id=client_id,
@@ -75,7 +82,7 @@ def get_local_spotify_oauth(scope=SPOTIFY_SCOPES):
         redirect_uri=redirect_uri,
         scope=scope,
         show_dialog=True,
-        cache_handler=None
+        cache_handler=NoCacheHandler()  # Use the custom handler instead of None
     )
 
 @app.route("/api/spotify/login")
