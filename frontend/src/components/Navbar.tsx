@@ -30,7 +30,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="navbar navbar-dark bg-dark px-3 justify-content-between">
+    <nav className="navbar navbar-dark bg-black px-3 justify-content-between">
       <div className="d-flex align-items-center gap-4">
         <div>
           <span className="navbar-brand mb-0 h1">Logo</span>
