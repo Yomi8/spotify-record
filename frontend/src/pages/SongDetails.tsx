@@ -28,18 +28,30 @@ interface SongDetails {
   longest_binge: number;
 }
 
+interface ErrorResponse {
+  error: string;
+}
+
 export default function SongDetails() {
   const { songId } = useParams();
   const [song, setSong] = useState<SongDetails | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/song/${songId}`)
       .then(res => res.json())
-      .then(setSong);
+      .then((data: SongDetails | ErrorResponse) => {
+        if ('error' in data) {
+          setError(data.error);
+        } else {
+          setSong(data as SongDetails);
+        }
+      })
+      .catch(err => setError(err.message));
   }, [songId]);
 
+  if (error) return <p className="text-danger">Error: {error}</p>;
   if (!song) return <p>Loading...</p>;
-  if ('error' in song) return <p>{song.error}</p>;
 
   const duration = `${Math.floor(song.duration_ms / 60000)}:${(
     (song.duration_ms % 60000) / 1000
