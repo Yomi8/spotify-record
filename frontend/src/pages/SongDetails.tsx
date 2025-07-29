@@ -68,26 +68,26 @@ export default function SongDetails() {
           />
         </div>
         <div className="col-md-8 d-flex flex-column justify-content-center">
-          <h1 className="display-4 mb-0">{song.track_name}</h1>
-          <h2 className="h3 text-secondary">{song.artist_name}</h2>
+          <h1 className="display-4 mb-0 text-light">{song.track_name}</h1>
+          <h2 className="h3 text-light opacity-75">{song.artist_name}</h2>
         </div>
       </div>
 
       <div className="row">
         <div className="col-md-4 mb-4">
           <div className="card bg-dark border-secondary">
-            <div className="card-header bg-secondary text-light">
-              <h3 className="h5 mb-0">Album Information</h3>
+            <div className="card-header bg-dark border-secondary">
+              <h3 className="h5 mb-0 text-light">Album Information</h3>
             </div>
-            <div className="card-body">
+            <div className="card-body text-light">
               <dl className="row mb-0">
-                <dt className="col-sm-4">Album</dt>
+                <dt className="col-sm-4 text-light opacity-75">Album</dt>
                 <dd className="col-sm-8">{song.album_name}</dd>
-                <dt className="col-sm-4">Type</dt>
+                <dt className="col-sm-4 text-light opacity-75">Type</dt>
                 <dd className="col-sm-8">{song.album_type}</dd>
-                <dt className="col-sm-4">Released</dt>
+                <dt className="col-sm-4 text-light opacity-75">Released</dt>
                 <dd className="col-sm-8">{song.release_date}</dd>
-                <dt className="col-sm-4">Duration</dt>
+                <dt className="col-sm-4 text-light opacity-75">Duration</dt>
                 <dd className="col-sm-8">{duration}</dd>
               </dl>
             </div>
@@ -96,16 +96,16 @@ export default function SongDetails() {
 
         <div className="col-md-4 mb-4">
           <div className="card bg-dark border-secondary">
-            <div className="card-header bg-secondary text-light">
-              <h3 className="h5 mb-0">Track Details</h3>
+            <div className="card-header bg-dark border-secondary">
+              <h3 className="h5 mb-0 text-light">Track Details</h3>
             </div>
-            <div className="card-body">
+            <div className="card-body text-light">
               <dl className="row mb-0">
-                <dt className="col-sm-4">Explicit</dt>
+                <dt className="col-sm-4 text-light opacity-75">Explicit</dt>
                 <dd className="col-sm-8">{song.is_explicit ? 'Yes' : 'No'}</dd>
-                <dt className="col-sm-4">Popularity</dt>
+                <dt className="col-sm-4 text-light opacity-75">Popularity</dt>
                 <dd className="col-sm-8">
-                  <div className="progress" style={{ height: '20px' }}>
+                  <div className="progress bg-dark">
                     <div 
                       className="progress-bar bg-success" 
                       style={{ width: `${song.popularity}%` }}
@@ -114,9 +114,9 @@ export default function SongDetails() {
                     </div>
                   </div>
                 </dd>
-                <dt className="col-sm-4">Local Track</dt>
+                <dt className="col-sm-4 text-light opacity-75">Local Track</dt>
                 <dd className="col-sm-8">{song.is_local ? 'Yes' : 'No'}</dd>
-                <dt className="col-sm-4">Added</dt>
+                <dt className="col-sm-4 text-light opacity-75">Added</dt>
                 <dd className="col-sm-8">{new Date(song.created_at).toLocaleDateString()}</dd>
               </dl>
             </div>
@@ -125,20 +125,20 @@ export default function SongDetails() {
 
         <div className="col-md-4 mb-4">
           <div className="card bg-dark border-secondary">
-            <div className="card-header bg-secondary text-light">
-              <h3 className="h5 mb-0">Listening Statistics</h3>
+            <div className="card-header bg-dark border-secondary">
+              <h3 className="h5 mb-0 text-light">Listening Statistics</h3>
             </div>
-            <div className="card-body">
+            <div className="card-body text-light">
               <dl className="row mb-0">
-                <dt className="col-sm-4">First Play</dt>
+                <dt className="col-sm-4 text-light opacity-75">First Play</dt>
                 <dd className="col-sm-8">{new Date(song.first_played).toLocaleDateString()}</dd>
-                <dt className="col-sm-4">Last Play</dt>
+                <dt className="col-sm-4 text-light opacity-75">Last Play</dt>
                 <dd className="col-sm-8">{new Date(song.last_played).toLocaleDateString()}</dd>
-                <dt className="col-sm-4">Total Plays</dt>
+                <dt className="col-sm-4 text-light opacity-75">Total Plays</dt>
                 <dd className="col-sm-8">{song.play_count}</dd>
-                <dt className="col-sm-4">Days Played</dt>
+                <dt className="col-sm-4 text-light opacity-75">Days Played</dt>
                 <dd className="col-sm-8">{song.days_played}</dd>
-                <dt className="col-sm-4">Longest Binge</dt>
+                <dt className="col-sm-4 text-light opacity-75">Longest Binge</dt>
                 <dd className="col-sm-8">{song.longest_binge} plays</dd>
               </dl>
             </div>
