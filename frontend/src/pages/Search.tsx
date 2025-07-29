@@ -26,12 +26,12 @@ export default function Search() {
           <p className="text-light-50 mb-4">[Your Secondary Text Here]</p>
           
           <form onSubmit={handleSearch} className="mb-5">
-            <div className="input-group" style={{ padding: '10px' }}>
+            <div className="input-group position-relative" style={{ padding: '10px' }}>
               <input
                 className="form-control form-control-lg bg-white text-dark border-0 rounded-pill"
                 style={{
                   paddingLeft: '25px',
-                  paddingRight: '50px',
+                  paddingRight: '60px',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}
                 value={query}
@@ -39,16 +39,23 @@ export default function Search() {
                 placeholder="Search for a song or artist"
               />
               <button 
-                className="btn btn-primary rounded-circle"
+                className="btn rounded-circle"
                 type="submit"
                 disabled={loading || !query.trim()}
                 style={{
                   position: 'absolute',
                   right: '20px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
                   zIndex: 10,
-                  width: '46px',
-                  height: '46px',
-                  margin: '4px'
+                  width: '40px',
+                  height: '40px',
+                  backgroundColor: '#1a1a1a',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: 'none'
                 }}
               >
                 {loading ? (
