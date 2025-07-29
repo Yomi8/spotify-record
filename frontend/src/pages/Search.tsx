@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 export default function Search() {
   const [query, setQuery] = useState("");
@@ -17,33 +18,71 @@ export default function Search() {
   };
 
   return (
-    <div>
-      <h1>Search Songs or Artists</h1>
-      <form onSubmit={handleSearch}>
-        <input
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Search for a song or artist"
-        />
-        <button type="submit" disabled={loading || !query.trim()}>
-          Search
-        </button>
-      </form>
-      {loading && <p>Loading...</p>}
-      <ul>
-        {results.map(song => (
-          <li
-            key={song.song_id}
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate(`/song/${song.song_id}`)}
-          >
-            <img src={song.image_url} alt="" width={40} style={{ verticalAlign: "middle" }} />
-            <span style={{ marginLeft: 8 }}>
-              {song.track_name} — {song.artist_name}
-            </span>
-          </li>
-        ))}
-      </ul>
+    <div className="container-fluid min-vh-100 bg-dark text-light">
+      <div className="row justify-content-center text-center pt-5">
+        <div className="col-md-8">
+          <h1 className="display-4 mb-2">[Your Main Text Here]</h1>
+          <p className="text-light-50 mb-4">[Your Secondary Text Here]</p>
+          
+          <form onSubmit={handleSearch} className="mb-5">
+            <div className="input-group">
+              <input
+                className="form-control form-control-lg bg-dark text-light border-secondary"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search for a song or artist"
+              />
+              <button 
+                className="btn btn-outline-light rounded-end"
+                type="submit" 
+                disabled={loading || !query.trim()}
+              >
+                {loading ? (
+                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                ) : (
+                  'Search'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {loading && (
+        <div className="text-center">
+          <div className="spinner-border text-light" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      )}
+
+      <div className="row justify-content-center">
+        <div className="col-md-8">
+          <div className="list-group">
+            {results.map(song => (
+              <div
+                key={song.song_id}
+                className="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex align-items-center"
+                onClick={() => navigate(`/song/${song.song_id}`)}
+                style={{ cursor: "pointer" }}
+              >
+                <img 
+                  src={song.image_url} 
+                  alt="" 
+                  className="me-3" 
+                  width={50} 
+                  height={50} 
+                  style={{ objectFit: "cover" }}
+                />
+                <div>
+                  <h6 className="mb-0">{song.track_name}</h6>
+                  <small className="text-light-50">{song.artist_name}</small>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
