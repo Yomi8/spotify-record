@@ -67,7 +67,7 @@ export default function SongDetails() {
     <div className="bg-dark text-light min-vh-100">
       <div className="container-fluid" style={containerStyle}>
         <div className="row mb-4">
-          <div className="col-md-4">
+          <div className="col-md-auto">
             <div style={{ 
               width: '300px', 
               height: '300px', 
