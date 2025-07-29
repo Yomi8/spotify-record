@@ -23,7 +23,7 @@ export default function Search() {
       <div className="row justify-content-center text-center pt-5">
         <div className="col-md-8">
           <h1 className="display-4 mb-2">Search</h1>
-          <p className="text-light-50 mb-4">Click om result to view more details</p>
+          <p className="text-light-50 mb-4">Click on result to view more details</p>
           
           <form onSubmit={handleSearch} className="mb-5">
             <div className="input-group position-relative" style={{ padding: '10px' }}>

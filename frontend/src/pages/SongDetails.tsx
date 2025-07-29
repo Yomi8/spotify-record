@@ -68,12 +68,24 @@ export default function SongDetails() {
       <div className="container-fluid" style={containerStyle}>
         <div className="row mb-4">
           <div className="col-md-4">
-            <img 
-              src={song.image_url} 
-              alt={`${song.track_name} album art`} 
-              className="img-fluid rounded shadow"
-              style={{ maxWidth: '300px' }}
-            />
+            <div style={{ 
+              width: '300px', 
+              height: '300px', 
+              maxWidth: '100%',
+              position: 'relative'
+            }}>
+              <img 
+                src={song.image_url} 
+                alt={`${song.track_name} album art`} 
+                className="img-fluid rounded shadow"
+                style={{ 
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  position: 'absolute'
+                }}
+              />
+            </div>
           </div>
           <div className="col-md-8 d-flex flex-column justify-content-center">
             <h1 className="display-4 mb-0 text-light">{song.track_name}</h1>
