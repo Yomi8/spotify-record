@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 export default function Search() {
   const [query, setQuery] = useState("");
@@ -25,22 +26,35 @@ export default function Search() {
           <p className="text-light-50 mb-4">[Your Secondary Text Here]</p>
           
           <form onSubmit={handleSearch} className="mb-5">
-            <div className="input-group">
+            <div className="input-group" style={{ padding: '10px' }}>
               <input
-                className="form-control form-control-lg bg-dark text-light border-secondary"
+                className="form-control form-control-lg bg-white text-dark border-0 rounded-pill"
+                style={{
+                  paddingLeft: '25px',
+                  paddingRight: '50px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search for a song or artist"
               />
               <button 
-                className="btn btn-outline-light rounded-end"
-                type="submit" 
+                className="btn btn-primary rounded-circle"
+                type="submit"
                 disabled={loading || !query.trim()}
+                style={{
+                  position: 'absolute',
+                  right: '20px',
+                  zIndex: 10,
+                  width: '46px',
+                  height: '46px',
+                  margin: '4px'
+                }}
               >
                 {loading ? (
                   <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 ) : (
-                  'Search'
+                  <i className="bi bi-search"></i>
                 )}
               </button>
             </div>
