@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import backgroundImg from '../assets/images/background.jpg';
 
 export default function Search() {
   const [query, setQuery] = useState("");
@@ -19,12 +20,42 @@ export default function Search() {
   };
 
   return (
-    <div className="container-fluid min-vh-100 bg-dark text-light">
-      <div className="row justify-content-center text-center pt-5">
-        <div className="col-md-8">
-          <h1 className="display-4 mb-2">Search</h1>
-          <p className="text-light-50 mb-4">Click on result to view more details</p>
-          
+    <div
+      className="container-fluid text-white py-4"
+      style={{
+        minHeight: '100vh',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Background image */}
+      <img
+        src={backgroundImg}
+        alt="Abstract Background"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          objectFit: 'cover',
+          zIndex: 0,
+        }}
+      />
+
+      {/* Main content */}
+      <div
+        className="container"
+        style={{
+          position: 'relative',
+          zIndex: 2,
+          maxWidth: '900px',
+        }}
+      >
+        <div className="card bg-dark text-white shadow rounded-4 p-4">
+          <h1 className="display-4 text-center mb-2">Search</h1>
+          <p className="text-center text-light-50 mb-4">Click on a result to view more details</p>
+
           <form onSubmit={handleSearch} className="mb-5">
             <div className="input-group position-relative" style={{ padding: '10px' }}>
               <input
@@ -32,13 +63,13 @@ export default function Search() {
                 style={{
                   paddingLeft: '25px',
                   paddingRight: '60px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                 }}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search for a song or artist"
               />
-              <button 
+              <button
                 className="btn rounded-circle"
                 type="submit"
                 disabled={loading || !query.trim()}
@@ -55,7 +86,7 @@ export default function Search() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  border: 'none'
+                  border: 'none',
                 }}
               >
                 {loading ? (
@@ -66,19 +97,15 @@ export default function Search() {
               </button>
             </div>
           </form>
-        </div>
-      </div>
 
-      {loading && (
-        <div className="text-center">
-          <div className="spinner-border text-light" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-        </div>
-      )}
+          {loading && (
+            <div className="text-center mb-4">
+              <div className="spinner-border text-light" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          )}
 
-      <div className="row justify-content-center">
-        <div className="col-md-8">
           <div className="list-group">
             {results.map(song => (
               <div
@@ -87,12 +114,12 @@ export default function Search() {
                 onClick={() => navigate(`/song/${song.song_id}`)}
                 style={{ cursor: "pointer" }}
               >
-                <img 
-                  src={song.image_url} 
-                  alt="" 
-                  className="me-3" 
-                  width={50} 
-                  height={50} 
+                <img
+                  src={song.image_url}
+                  alt=""
+                  className="me-3"
+                  width={50}
+                  height={50}
                   style={{ objectFit: "cover" }}
                 />
                 <div>
