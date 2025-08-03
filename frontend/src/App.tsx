@@ -12,6 +12,9 @@ import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import SongDetails from './pages/SongDetails';
 
+import Lists from "./pages/Lists";
+import ListViewer from "./pages/ListViewer";
+
 function App() {
   return (
     <Router>
@@ -19,7 +22,8 @@ function App() {
       <UserSync />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/list" element={<List />} />
+        <Route path="/lists" element={<Lists />} />
+        <Route path="/lists/:listType" element={<ListViewer />} />
         <Route path="/search" element={<Search />} />
         <Route path="/song/:songId" element={<SongDetails />} />
         <Route path="/settings" element={<Settings />} />
