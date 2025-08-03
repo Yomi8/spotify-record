@@ -6,14 +6,12 @@ import Navbar from './components/Navbar';
 import UserSync from './components/UserSync';
 
 import Home from './pages/Home';
-import List from './pages/Lists';
+import Lists from "./pages/Lists";
+import ListViewer from "./pages/ListViewer";
 import Search from './pages/Search';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import SongDetails from './pages/SongDetails';
-
-import Lists from "./pages/Lists";
-import ListViewer from "./pages/ListViewer";
 
 function App() {
   return (
