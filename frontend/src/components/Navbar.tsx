@@ -36,7 +36,7 @@ export default function Navbar() {
           <span className="navbar-brand mb-0 h1">Logo</span>
           <Link to="/" className="text-white">Record</Link>
         </div>
-        <Link to="/list" className="nav-link text-white">Lists</Link>
+        <Link to="/lists" className="nav-link text-white">Lists</Link>
         <Link to="/search" className="nav-link text-white">
           <i className="bi bi-search"></i> Search
         </Link>
