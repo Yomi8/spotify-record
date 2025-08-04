@@ -534,8 +534,6 @@ def get_song_details(song_id):
 
     return jsonify(song), 200
 
-from flask import request
-
 @app.route('/api/lists/top-songs', methods=['GET'])
 @jwt_required()
 def get_top_songs():
