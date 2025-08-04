@@ -23,11 +23,21 @@ export default function ListViewer() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto mt-10 px-4">
-      <h1 className="text-2xl font-bold mb-6 text-center capitalize">
-        {listType?.replaceAll("-", " ")}
-      </h1>
-      <div className="p-4 border rounded-lg shadow">{renderContent()}</div>
-    </div>
+        <div
+          className="container-fluid text-white py-4"
+          style={{
+            marginTop: '65px',
+            minHeight: '100vh',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+            <div className="max-w-4xl mx-auto mt-10 px-4">
+              <h1 className="text-2xl font-bold mb-6 text-center capitalize">
+                {listType?.replaceAll("-", " ")}
+              </h1>
+              <div className="p-4 border rounded-lg shadow">{renderContent()}</div>
+            </div>
+        </div>
   );
 }
