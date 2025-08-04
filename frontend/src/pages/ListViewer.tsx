@@ -140,7 +140,7 @@ export default function ListViewer() {
               src={backgroundImg}
               alt="Abstract Background"
               style={{
-                position: 'absolute',
+                position: 'fixed',
                 top: 0,
                 left: 0,
                 width: '100vw',
