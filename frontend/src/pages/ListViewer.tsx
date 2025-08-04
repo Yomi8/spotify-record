@@ -32,11 +32,29 @@ export default function ListViewer() {
             overflow: 'hidden',
           }}
         >
-            <div className="max-w-4xl mx-auto mt-10 px-4">
-              <h1 className="text-2xl font-bold mb-6 text-center capitalize">
-                {listType?.replaceAll("-", " ")}
-              </h1>
-              <div className="p-4 border rounded-lg shadow">{renderContent()}</div>
+            {/* Background image */}
+            <img
+              src={backgroundImg}
+              alt="Abstract Background"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100vw',
+                height: '100vh',
+                objectFit: 'cover',
+                zIndex: 0,
+              }}
+            />
+
+            {/* Main content */}
+            <div className="card bg-dark text-white shadow rounded-4 p-4" style={{marginTop:'65px', position: 'relative', zIndex: 1 }}>
+                <div className="max-w-4xl mx-auto mt-10 px-4">
+                  <h1 className="text-2xl font-bold mb-6 text-center capitalize">
+                    {listType?.replaceAll("-", " ")}
+                  </h1>
+                  <div className="p-4 border rounded-lg shadow">{renderContent()}</div>
+                </div>
             </div>
         </div>
   );
