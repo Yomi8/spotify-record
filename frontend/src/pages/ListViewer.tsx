@@ -30,14 +30,14 @@ export default function ListViewer() {
   const isSongList =
     listType === "top-100-songs" ||
     listType === "top-songs-all-time" ||
-    listType === "top-10-this-week";
+    listType === "top-10-this-year";
 
   const isArtistList =
     listType === "top-artists" ||
     listType === "top-10-artists";
 
   const limit =
-    listType === "top-10-this-week" || listType === "top-10-artists"
+    listType === "top-10-this-year" || listType === "top-10-artists"
       ? 10
       : 100;
 
@@ -45,9 +45,9 @@ export default function ListViewer() {
   let start: string | undefined;
   let end: string | undefined;
 
-  if (listType === "top-10-this-week") {
+  if (listType === "top-10-this-year") {
     end = dayjs().toISOString();
-    start = dayjs().subtract(7, "day").toISOString();
+    start = dayjs().subtract(1, "year").toISOString();
   }
 
   useEffect(() => {
