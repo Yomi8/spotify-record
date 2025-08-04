@@ -1,11 +1,26 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import backgroundImg from "../assets/background.jpg"; // Adjust path as needed
+
+type Song = {
+  song_id: string;
+  track_name: string;
+  artist_name: string;
+  image_url?: string;
+  play_count: number;
+};
+
+type Artist = {
+  artist_name: string;
+  image_url?: string;
+  play_count: number;
+};
 
 export default function ListViewer() {
   const { listType } = useParams();
-  const [songs, setSongs] = useState([]);
-  const [artists, setArtists] = useState([]);
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Example: You can set these based on user input or listType
@@ -25,7 +40,7 @@ export default function ListViewer() {
           params: { start, end, limit },
           withCredentials: true,
         })
-        .then((res) => setSongs(res.data.songs))
+        .then((res: { data: { songs: Song[] } }) => setSongs(res.data.songs))
         .catch(() => setSongs([]))
         .finally(() => setLoading(false));
     } else if (
@@ -37,7 +52,7 @@ export default function ListViewer() {
           params: { start, end, limit },
           withCredentials: true,
         })
-        .then((res) => setArtists(res.data.artists))
+        .then((res: { data: { artists: Artist[] } }) => setArtists(res.data.artists))
         .catch(() => setArtists([]))
         .finally(() => setLoading(false));
     } else {
