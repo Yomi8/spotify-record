@@ -52,7 +52,6 @@ export default function Home() {
     <div
       className="container-fluid text-white py-4"
       style={{
-        marginTop: '65px',
         minHeight: '100vh',
         position: 'relative',
         overflow: 'hidden',
@@ -88,7 +87,7 @@ export default function Home() {
       />
 
       {/* Main content */}
-      <div style={{ position: 'relative', zIndex: 2 }}>
+      <div style={{marginTop: '65px', position: 'relative', zIndex: 2 }}>
         <h1>
           Welcome{' '}
           <span>
