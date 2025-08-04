@@ -542,12 +542,11 @@ def get_top_songs():
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
-    # Parse query parameters
     start = request.args.get("start")
     end = request.args.get("end")
     limit = int(request.args.get("limit", 100))
 
-    filters = ["user_id = %s"]
+    filters = ["usage_logs.user_id = %s"]
     params = [user_id]
 
     if start:
@@ -562,7 +561,7 @@ def get_top_songs():
 
     query = f"""
         SELECT
-            song_id,
+            core_songs.song_id,
             track_name,
             artist_name,
             image_url,
@@ -570,7 +569,7 @@ def get_top_songs():
         FROM usage_logs
         JOIN core_songs ON usage_logs.song_id = core_songs.song_id
         WHERE {where_clause}
-        GROUP BY song_id, track_name, artist_name, image_url
+        GROUP BY core_songs.song_id, track_name, artist_name, image_url
         ORDER BY play_count DESC
         LIMIT %s
     """
@@ -586,12 +585,11 @@ def get_top_artists():
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
-    # Parse query parameters
     start = request.args.get("start")
     end = request.args.get("end")
     limit = int(request.args.get("limit", 100))
 
-    filters = ["user_id = %s"]
+    filters = ["usage_logs.user_id = %s"]
     params = [user_id]
 
     if start:
@@ -616,7 +614,7 @@ def get_top_artists():
         ORDER BY play_count DESC
         LIMIT %s
     """
-    
+
     artists = run_query(query, tuple(params), dict_cursor=True)
     return jsonify({"artists": artists}), 200
 
