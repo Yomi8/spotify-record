@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import backgroundImg from "../assets/background.jpg"; // Adjust path as needed
+import backgroundImg from "../assets/images/background.jpg";
 
 type Song = {
   song_id: string;
