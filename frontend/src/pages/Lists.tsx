@@ -66,17 +66,21 @@ export default function Lists() {
                 style={{
                   aspectRatio: '1 / 1',
                   width: '100%',
+                  maxWidth: '220px',      // Limit max width
+                  maxHeight: '220px',     // Limit max height
                   minHeight: '0',
                   background: `url(${list.img}) center/cover no-repeat`,
                   color: 'white',
                   border: 'none',
+                  margin: '0 auto',       // Center in grid cell
+                  display: 'block',
                 }}
               >
                 <div
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    background: 'rgba(0,0,0,0.45)',
+                    background: 'rgba(0,0,0,0.22)', // Less dark overlay
                     borderRadius: 'inherit',
                   }}
                 />
