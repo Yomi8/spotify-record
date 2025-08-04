@@ -2,12 +2,12 @@ import { useNavigate } from "react-router-dom";
 import backgroundImg from '../assets/images/background.jpg';
 
 // Example images, replace with your own
-import top100Img from '../assets/images/top100.jpg';
-import artistsImg from '../assets/images/artists.jpg';
-import allTimeImg from '../assets/images/alltime.jpg';
-import top10Img from '../assets/images/top10.jpg';
-import weekImg from '../assets/images/week.jpg';
-import customImg from '../assets/images/custom.jpg';
+// import top100Img from '../assets/images/top100.jpg';
+// import artistsImg from '../assets/images/artists.jpg';
+// import allTimeImg from '../assets/images/alltime.jpg';
+// import top10Img from '../assets/images/top10.jpg';
+// import weekImg from '../assets/images/week.jpg';
+// import customImg from '../assets/images/custom.jpg';
 
 export default function Lists() {
   const navigate = useNavigate();
