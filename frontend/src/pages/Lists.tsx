@@ -52,16 +52,15 @@ export default function Lists() {
             {listOptions.map((list) => (
               <div
                 key={list.type}
-                className="col-12 col-sm-6 col-md-4 col-lg-3 d-flex justify-content-center"
+                className="col-12 col-sm-6 col-md-4 col-lg-3 d-flex justify-content-center mb-4"
               >
                 <button
                   onClick={() => navigate(`/lists/${list.type}`)}
                   className="position-relative d-flex align-items-center justify-content-center rounded-3 shadow-lg overflow-hidden border-0"
                   style={{
                     aspectRatio: '1 / 1',
-                    width: '100%',
-                    maxWidth: '220px',
-                    maxHeight: '220px',
+                    maxWidth: '300px',
+                    height: '300px',
                     minHeight: '0',
                     background: `url(${list.img}) center/cover no-repeat`,
                     color: 'white',
@@ -83,7 +82,7 @@ export default function Lists() {
                       position: 'relative',
                       zIndex: 2,
                       textShadow: '0 1px 6px rgba(0,0,0,0.35)',
-                      fontSize: '1.1rem',
+                      fontSize: '1.35rem',
                     }}
                   >
                     {list.label}
