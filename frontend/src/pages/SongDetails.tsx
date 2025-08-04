@@ -62,7 +62,7 @@ export default function SongDetails() {
     <div
       className="container-fluid text-white py-4"
       style={{
-        paddingTop: '65px',
+        marginTop: '65px',
         minHeight: '100vh',
         position: 'relative',
         overflow: 'hidden',
