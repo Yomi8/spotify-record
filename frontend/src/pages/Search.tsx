@@ -23,7 +23,6 @@ export default function Search() {
     <div
       className="container-fluid text-white py-4"
       style={{
-        marginTop: '65px',
         minHeight: '100vh',
         position: 'relative',
         overflow: 'hidden',
@@ -48,6 +47,7 @@ export default function Search() {
       <div
         className="container"
         style={{
+          marginTop: '65px',
           position: 'relative',
           zIndex: 2,
           maxWidth: '900px',
