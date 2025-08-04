@@ -2,12 +2,12 @@ import { useNavigate } from "react-router-dom";
 import backgroundImg from '../assets/images/background.jpg';
 
 
-import buttonIMG1 from '../assets/images/butons/buttonIMG1.jpg';
-import buttonIMG2 from '../assets/images/butons/buttonIMG2.jpg';
-import buttonIMG3 from '../assets/images/butons/buttonIMG3.jpg';
-import buttonIMG4 from '../assets/images/butons/buttonIMG4.jpg';
-import buttonIMG5 from '../assets/images/butons/buttonIMG5.jpg';
-import buttonIMG6 from '../assets/images/butons/buttonIMG6.jpg';
+import buttonIMG1 from '../assets/images/buttons/buttonIMG1.jpg';
+import buttonIMG2 from '../assets/images/buttons/buttonIMG2.jpg';
+import buttonIMG3 from '../assets/images/buttons/buttonIMG3.jpg';
+import buttonIMG4 from '../assets/images/buttons/buttonIMG4.jpg';
+import buttonIMG5 from '../assets/images/buttons/buttonIMG5.jpg';
+import buttonIMG6 from '../assets/images/buttons/buttonIMG6.jpg';
 
 export default function Lists() {
   const navigate = useNavigate();
