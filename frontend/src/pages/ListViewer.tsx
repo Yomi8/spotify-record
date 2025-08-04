@@ -1,5 +1,7 @@
 import { useParams } from "react-router-dom";
 
+import backgroundImg from '../assets/images/background.jpg';
+
 export default function ListViewer() {
   const { listType } = useParams();
 
