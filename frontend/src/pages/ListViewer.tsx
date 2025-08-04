@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import backgroundImg from "../assets/images/background.jpg";
+import { useAuth0 } from "@auth0/auth0-react";
 
 type Song = {
   song_id: string;
@@ -19,6 +20,7 @@ type Artist = {
 
 export default function ListViewer() {
   const { listType } = useParams();
+  const { getAccessTokenSilently, isAuthenticated } = useAuth0();
   const [songs, setSongs] = useState<Song[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,36 +31,43 @@ export default function ListViewer() {
   const limit = listType === "top-10-this-week" || listType === "top-10-artists" ? 10 : 100;
 
   useEffect(() => {
-    setLoading(true);
-    if (
-      listType === "top-100-songs" ||
-      listType === "top-songs-all-time" ||
-      listType === "top-10-this-week"
-    ) {
-      axios
-        .get("/api/lists/top-songs", {
-          params: { start, end, limit },
-          withCredentials: true,
-        })
-        .then((res: { data: { songs: Song[] } }) => setSongs(res.data.songs))
-        .catch(() => setSongs([]))
-        .finally(() => setLoading(false));
-    } else if (
-      listType === "top-artists" ||
-      listType === "top-10-artists"
-    ) {
-      axios
-        .get("/api/lists/top-artists", {
-          params: { start, end, limit },
-          withCredentials: true,
-        })
-        .then((res: { data: { artists: Artist[] } }) => setArtists(res.data.artists))
-        .catch(() => setArtists([]))
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-  }, [listType, start, end, limit]);
+    const fetchData = async () => {
+      if (!isAuthenticated) return;
+      setLoading(true);
+      const accessToken = await getAccessTokenSilently();
+      if (
+        listType === "top-100-songs" ||
+        listType === "top-songs-all-time" ||
+        listType === "top-10-this-week"
+      ) {
+        axios
+          .get("/api/lists/top-songs", {
+            params: { start, end, limit },
+            headers: { Authorization: `Bearer ${accessToken}` },
+            withCredentials: true,
+          })
+          .then((res: { data: { songs: Song[] } }) => setSongs(res.data.songs))
+          .catch(() => setSongs([]))
+          .finally(() => setLoading(false));
+      } else if (
+        listType === "top-artists" ||
+        listType === "top-10-artists"
+      ) {
+        axios
+          .get("/api/lists/top-artists", {
+            params: { start, end, limit },
+            headers: { Authorization: `Bearer ${accessToken}` },
+            withCredentials: true,
+          })
+          .then((res: { data: { artists: Artist[] } }) => setArtists(res.data.artists))
+          .catch(() => setArtists([]))
+          .finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [listType, start, end, limit, isAuthenticated]);
 
   const renderContent = () => {
     if (loading) return <div>Loading...</div>;
