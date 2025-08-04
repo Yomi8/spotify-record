@@ -3,7 +3,7 @@ import backgroundImg from '../assets/images/background.jpg';
 
 
 import buttonIMG1 from '../assets/images/buttons/buttonIMG1.jpg';
-import buttonIMG2 from '../assets/images/buttons/buttonIMG2.jpg';
+import buttonIMG2 from '../assets/images/buttons/buttonIMG2.png';
 import buttonIMG3 from '../assets/images/buttons/buttonIMG3.jpg';
 import buttonIMG4 from '../assets/images/buttons/buttonIMG4.jpg';
 import buttonIMG5 from '../assets/images/buttons/buttonIMG5.jpg';
