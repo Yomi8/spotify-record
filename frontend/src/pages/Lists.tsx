@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
+import backgroundImg from '../assets/images/background.jpg';
+
 export default function Lists() {
   const navigate = useNavigate();
 
