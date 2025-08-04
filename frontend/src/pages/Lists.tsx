@@ -78,15 +78,18 @@ export default function Lists() {
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    background: 'rgba(0,0,0,0.08)', // Much lighter overlay
+                    background: 'rgba(0,0,0,0.08)', // Very light overlay
                     borderRadius: 'inherit',
-                    pointerEvents: 'none', // Allow button clicks
+                    pointerEvents: 'none',
+                    zIndex: 1, // Ensure overlay is below text
                   }}
                 />
                 <span
-                  className="relative z-10 text-lg font-semibold text-center px-2"
+                  className="text-lg font-semibold text-center px-2"
                   style={{
-                    textShadow: '0 1px 6px rgba(0,0,0,0.35)', // Subtle shadow for readability
+                    position: 'relative',
+                    zIndex: 2, // Ensure text is above overlay
+                    textShadow: '0 1px 6px rgba(0,0,0,0.35)',
                   }}
                 >
                   {list.label}
