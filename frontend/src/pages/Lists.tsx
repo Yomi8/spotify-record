@@ -18,7 +18,6 @@ export default function Lists() {
     <div
       className="container-fluid text-white py-4"
       style={{
-        marginTop: '65px',
         minHeight: '100vh',
         position: 'relative',
         overflow: 'hidden',
@@ -39,7 +38,7 @@ export default function Lists() {
       />
 
       {/* Main content */}
-      <div className="card bg-dark text-white shadow rounded-4 p-4" style={{ position: 'relative', zIndex: 1 }}>
+      <div className="card bg-dark text-white shadow rounded-4 p-4" style={{marginTop:'65px', position: 'relative', zIndex: 1 }}>
         <div className="max-w-4xl mx-auto mt-10 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">Lists</h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
