@@ -534,5 +534,85 @@ def get_song_details(song_id):
 
     return jsonify(song), 200
 
+from flask import request
+
+@app.route('/api/lists/top-songs', methods=['GET'])
+@jwt_required()
+def get_top_songs():
+    auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id)
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
+
+    start = request.args.get("start")
+    end = request.args.get("end")
+    limit = int(request.args.get("limit", 100))
+
+    time_filter = ""
+    params = [user_id]
+    if start:
+        time_filter += " AND u.ts >= %s"
+        params.append(start)
+    if end:
+        time_filter += " AND u.ts <= %s"
+        params.append(end)
+
+    params.append(limit)
+
+    songs = run_query(f"""
+        SELECT
+            s.song_id,
+            s.track_name,
+            s.artist_name,
+            s.image_url,
+            COUNT(u.id) AS play_count
+        FROM usage_logs u
+        JOIN core_songs s ON u.song_id = s.song_id
+        WHERE u.user_id = %s {time_filter}
+        GROUP BY s.song_id
+        ORDER BY play_count DESC
+        LIMIT %s
+    """, tuple(params), dict_cursor=True)
+
+    return jsonify({"songs": songs}), 200
+
+@app.route('/api/lists/top-artists', methods=['GET'])
+@jwt_required()
+def get_top_artists():
+    auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id)
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
+
+    start = request.args.get("start")
+    end = request.args.get("end")
+    limit = int(request.args.get("limit", 100))
+
+    time_filter = ""
+    params = [user_id]
+    if start:
+        time_filter += " AND u.ts >= %s"
+        params.append(start)
+    if end:
+        time_filter += " AND u.ts <= %s"
+        params.append(end)
+
+    params.append(limit)
+
+    artists = run_query(f"""
+        SELECT
+            s.artist_name,
+            MAX(s.image_url) AS image_url,
+            COUNT(u.id) AS play_count
+        FROM usage_logs u
+        JOIN core_songs s ON u.song_id = s.song_id
+        WHERE u.user_id = %s {time_filter}
+        GROUP BY s.artist_name
+        ORDER BY play_count DESC
+        LIMIT %s
+    """, tuple(params), dict_cursor=True)
+
+    return jsonify({"artists": artists}), 200
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

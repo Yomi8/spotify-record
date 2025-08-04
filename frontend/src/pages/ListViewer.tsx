@@ -1,22 +1,100 @@
 import { useParams } from "react-router-dom";
-
-import backgroundImg from '../assets/images/background.jpg';
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 export default function ListViewer() {
   const { listType } = useParams();
+  const [songs, setSongs] = useState([]);
+  const [artists, setArtists] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Example: You can set these based on user input or listType
+  const start = undefined; // e.g. "2025-08-01"
+  const end = undefined;   // e.g. "2025-08-04"
+  const limit = listType === "top-10-this-week" || listType === "top-10-artists" ? 10 : 100;
+
+  useEffect(() => {
+    setLoading(true);
+    if (
+      listType === "top-100-songs" ||
+      listType === "top-songs-all-time" ||
+      listType === "top-10-this-week"
+    ) {
+      axios
+        .get("/api/lists/top-songs", {
+          params: { start, end, limit },
+          withCredentials: true,
+        })
+        .then((res) => setSongs(res.data.songs))
+        .catch(() => setSongs([]))
+        .finally(() => setLoading(false));
+    } else if (
+      listType === "top-artists" ||
+      listType === "top-10-artists"
+    ) {
+      axios
+        .get("/api/lists/top-artists", {
+          params: { start, end, limit },
+          withCredentials: true,
+        })
+        .then((res) => setArtists(res.data.artists))
+        .catch(() => setArtists([]))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [listType, start, end, limit]);
 
   const renderContent = () => {
+    if (loading) return <div>Loading...</div>;
     switch (listType) {
       case "top-100-songs":
-        return <h2>Top 100 Songs Table</h2>;
-      case "top-artists":
-        return <h2>Your Top Artists Table</h2>;
       case "top-songs-all-time":
-        return <h2>Top Songs of All Time Table</h2>;
-      case "top-10-artists":
-        return <h2>Top 10 Artists Table</h2>;
       case "top-10-this-week":
-        return <h2>Top 10 Songs This Week Table</h2>;
+        return (
+          <table className="table table-dark table-striped">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Song</th>
+                <th>Artist</th>
+                <th>Plays</th>
+              </tr>
+            </thead>
+            <tbody>
+              {songs.map((song, idx) => (
+                <tr key={song.song_id}>
+                  <td>{idx + 1}</td>
+                  <td>{song.track_name}</td>
+                  <td>{song.artist_name}</td>
+                  <td>{song.play_count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
+      case "top-artists":
+      case "top-10-artists":
+        return (
+          <table className="table table-dark table-striped">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Artist</th>
+                <th>Plays</th>
+              </tr>
+            </thead>
+            <tbody>
+              {artists.map((artist, idx) => (
+                <tr key={artist.artist_name}>
+                  <td>{idx + 1}</td>
+                  <td>{artist.artist_name}</td>
+                  <td>{artist.play_count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
       case "custom":
         return <h2>Custom List Builder</h2>;
       default:
