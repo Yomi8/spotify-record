@@ -22,18 +22,36 @@ export default function Lists() {
         overflow: 'hidden',
       }}
     >
-      <div className="max-w-4xl mx-auto mt-10 px-4">
-        <h1 className="text-3xl font-bold mb-8 text-center">Lists</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {listOptions.map((list) => (
-            <button
-              key={list.type}
-              onClick={() => navigate(`/lists/${list.type}`)}
-              className="bg-blue-600 text-white py-3 px-4 rounded-xl shadow hover:bg-blue-700 transition"
-            >
-              {list.label}
-            </button>
-          ))}
+      {/* Background image */}
+      <img
+        src={backgroundImg}
+        alt="Abstract Background"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          objectFit: 'cover',
+          zIndex: 0,
+        }}
+      />
+
+      {/* Main content */}
+      <div className="card bg-dark text-white shadow rounded-4 p-4"></div>
+        <div className="max-w-4xl mx-auto mt-10 px-4">
+          <h1 className="text-3xl font-bold mb-8 text-center">Lists</h1>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {listOptions.map((list) => (
+              <button
+                key={list.type}
+                onClick={() => navigate(`/lists/${list.type}`)}
+                className="bg-blue-600 text-white py-3 px-4 rounded-xl shadow hover:bg-blue-700 transition"
+              >
+                {list.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
