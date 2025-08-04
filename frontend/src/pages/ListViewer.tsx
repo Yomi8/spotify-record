@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import backgroundImg from "../assets/images/background.jpg";
 import { useAuth0 } from "@auth0/auth0-react";
+import dayjs from "dayjs";
 
 type Song = {
   song_id: string;
@@ -25,49 +26,68 @@ export default function ListViewer() {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Example: You can set these based on user input or listType
-  const start = undefined; // e.g. "2025-08-01"
-  const end = undefined;   // e.g. "2025-08-04"
-  const limit = listType === "top-10-this-week" || listType === "top-10-artists" ? 10 : 100;
+  // Determine API endpoint and parameters
+  const isSongList =
+    listType === "top-100-songs" ||
+    listType === "top-songs-all-time" ||
+    listType === "top-10-this-week";
+
+  const isArtistList =
+    listType === "top-artists" ||
+    listType === "top-10-artists";
+
+  const limit =
+    listType === "top-10-this-week" || listType === "top-10-artists"
+      ? 10
+      : 100;
+
+  // Date filters
+  let start: string | undefined;
+  let end: string | undefined;
+
+  if (listType === "top-10-this-week") {
+    end = dayjs().toISOString();
+    start = dayjs().subtract(7, "day").toISOString();
+  }
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!isAuthenticated) return;
+      if (!isAuthenticated || (!isSongList && !isArtistList)) return;
       setLoading(true);
-      const accessToken = await getAccessTokenSilently();
-      if (
-        listType === "top-100-songs" ||
-        listType === "top-songs-all-time" ||
-        listType === "top-10-this-week"
-      ) {
-        axios
-          .get("/api/lists/top-songs", {
-            params: { start, end, limit },
-            headers: { Authorization: `Bearer ${accessToken}` },
-            withCredentials: true,
-          })
-          .then((res: { data: { songs: Song[] } }) => setSongs(res.data.songs))
-          .catch(() => setSongs([]))
-          .finally(() => setLoading(false));
-      } else if (
-        listType === "top-artists" ||
-        listType === "top-10-artists"
-      ) {
-        axios
-          .get("/api/lists/top-artists", {
-            params: { start, end, limit },
-            headers: { Authorization: `Bearer ${accessToken}` },
-            withCredentials: true,
-          })
-          .then((res: { data: { artists: Artist[] } }) => setArtists(res.data.artists))
-          .catch(() => setArtists([]))
-          .finally(() => setLoading(false));
-      } else {
+      try {
+        const accessToken = await getAccessTokenSilently();
+
+        const endpoint = isSongList
+          ? "/api/lists/songs"
+          : "/api/lists/artists";
+
+        const res = await axios.get(endpoint, {
+          params: {
+            start,
+            end,
+            limit,
+          },
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          withCredentials: true,
+        });
+
+        if (isSongList) {
+          setSongs(res.data.songs);
+        } else {
+          setArtists(res.data.artists);
+        }
+      } catch (error) {
+        setSongs([]);
+        setArtists([]);
+      } finally {
         setLoading(false);
       }
     };
+
     fetchData();
-  }, [listType, start, end, limit, isAuthenticated]);
+  }, [listType, isAuthenticated]);
 
   const renderContent = () => {
     if (loading) return <div>Loading...</div>;
@@ -127,38 +147,43 @@ export default function ListViewer() {
   };
 
   return (
-        <div
-          className="container-fluid text-white py-4"
-          style={{
-            minHeight: '100vh',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-            {/* Background image */}
-            <img
-              src={backgroundImg}
-              alt="Abstract Background"
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100vw',
-                height: '100vh',
-                objectFit: 'cover',
-                zIndex: 0,
-              }}
-            />
+    <div
+      className="container-fluid text-white py-4"
+      style={{
+        minHeight: "100vh",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Background image */}
+      <img
+        src={backgroundImg}
+        alt="Abstract Background"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          objectFit: "cover",
+          zIndex: 0,
+        }}
+      />
 
-            {/* Main content */}
-            <div className="card bg-dark text-white shadow rounded-4 p-4" style={{marginTop:'65px', position: 'relative', zIndex: 1 }}>
-                <div className="max-w-4xl mx-auto mt-10 px-4">
-                  <h1 className="text-2xl font-bold mb-6 text-center capitalize">
-                    {listType?.replaceAll("-", " ")}
-                  </h1>
-                  <div className="p-4 border rounded-lg shadow">{renderContent()}</div>
-                </div>
-            </div>
+      {/* Main content */}
+      <div
+        className="card bg-dark text-white shadow rounded-4 p-4"
+        style={{ marginTop: "65px", position: "relative", zIndex: 1 }}
+      >
+        <div className="max-w-4xl mx-auto mt-10 px-4">
+          <h1 className="text-2xl font-bold mb-6 text-center capitalize">
+            {listType?.replaceAll("-", " ")}
+          </h1>
+          <div className="p-4 border rounded-lg shadow">
+            {renderContent()}
+          </div>
         </div>
+      </div>
+    </div>
   );
 }

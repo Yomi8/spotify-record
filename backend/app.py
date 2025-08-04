@@ -534,7 +534,7 @@ def get_song_details(song_id):
 
     return jsonify(song), 200
 
-@app.route('/api/lists/top-songs', methods=['GET'])
+@app.route('/api/lists/songs', methods=['GET'])
 @jwt_required()
 def get_top_songs():
     auth0_id = get_jwt_identity()
@@ -542,42 +542,46 @@ def get_top_songs():
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
+    # Parse query parameters
     start = request.args.get("start")
     end = request.args.get("end")
-    limit = int(request.args.get("limit", 100))
+    try:
+        limit = int(request.args.get("limit", 100))
+    except ValueError:
+        return jsonify({"error": "Invalid limit"}), 400
 
+    # Build WHERE clause
     filters = ["usage_logs.user_id = %s"]
     params = [user_id]
 
     if start:
-        filters.append("ts >= %s")
+        filters.append("usage_logs.ts >= %s")
         params.append(start)
     if end:
-        filters.append("ts <= %s")
+        filters.append("usage_logs.ts <= %s")
         params.append(end)
 
-    params.append(limit)
     where_clause = " AND ".join(filters)
 
     query = f"""
         SELECT
             core_songs.song_id,
-            track_name,
-            artist_name,
-            image_url,
-            COUNT(usage_id) AS play_count
+            core_songs.track_name,
+            core_songs.artist_name,
+            core_songs.image_url,
+            COUNT(usage_logs.usage_id) AS play_count
         FROM usage_logs
         JOIN core_songs ON usage_logs.song_id = core_songs.song_id
         WHERE {where_clause}
-        GROUP BY core_songs.song_id, track_name, artist_name, image_url
+        GROUP BY core_songs.song_id, core_songs.track_name, core_songs.artist_name, core_songs.image_url
         ORDER BY play_count DESC
-        LIMIT %s
+        LIMIT {limit}
     """
 
     songs = run_query(query, tuple(params), dict_cursor=True)
     return jsonify({"songs": songs}), 200
 
-@app.route('/api/lists/top-artists', methods=['GET'])
+@app.route('/api/lists/artists', methods=['GET'])
 @jwt_required()
 def get_top_artists():
     auth0_id = get_jwt_identity()
@@ -585,34 +589,38 @@ def get_top_artists():
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
+    # Parse query parameters
     start = request.args.get("start")
     end = request.args.get("end")
-    limit = int(request.args.get("limit", 100))
+    try:
+        limit = int(request.args.get("limit", 100))
+    except ValueError:
+        return jsonify({"error": "Invalid limit"}), 400
 
+    # Build WHERE clause
     filters = ["usage_logs.user_id = %s"]
     params = [user_id]
 
     if start:
-        filters.append("ts >= %s")
+        filters.append("usage_logs.ts >= %s")
         params.append(start)
     if end:
-        filters.append("ts <= %s")
+        filters.append("usage_logs.ts <= %s")
         params.append(end)
 
-    params.append(limit)
     where_clause = " AND ".join(filters)
 
     query = f"""
         SELECT
-            artist_name,
-            MAX(image_url) AS image_url,
-            COUNT(usage_id) AS play_count
+            core_songs.artist_name,
+            MAX(core_songs.image_url) AS image_url,
+            COUNT(usage_logs.usage_id) AS play_count
         FROM usage_logs
         JOIN core_songs ON usage_logs.song_id = core_songs.song_id
         WHERE {where_clause}
-        GROUP BY artist_name
+        GROUP BY core_songs.artist_name
         ORDER BY play_count DESC
-        LIMIT %s
+        LIMIT {limit}
     """
 
     artists = run_query(query, tuple(params), dict_cursor=True)
