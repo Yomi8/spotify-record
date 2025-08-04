@@ -66,25 +66,29 @@ export default function Lists() {
                 style={{
                   aspectRatio: '1 / 1',
                   width: '100%',
-                  maxWidth: '220px',      // Limit max width
-                  maxHeight: '220px',     // Limit max height
+                  maxWidth: '220px',
+                  maxHeight: '220px',
                   minHeight: '0',
                   background: `url(${list.img}) center/cover no-repeat`,
                   color: 'white',
                   border: 'none',
-                  margin: '0 auto',       // Center in grid cell
-                  display: 'block',
                 }}
               >
                 <div
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    background: 'rgba(0,0,0,0.22)', // Less dark overlay
+                    background: 'rgba(0,0,0,0.08)', // Much lighter overlay
                     borderRadius: 'inherit',
+                    pointerEvents: 'none', // Allow button clicks
                   }}
                 />
-                <span className="relative z-10 text-lg font-semibold text-center px-2">
+                <span
+                  className="relative z-10 text-lg font-semibold text-center px-2"
+                  style={{
+                    textShadow: '0 1px 6px rgba(0,0,0,0.35)', // Subtle shadow for readability
+                  }}
+                >
                   {list.label}
                 </span>
               </button>
