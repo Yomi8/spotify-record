@@ -1,24 +1,24 @@
 import { useNavigate } from "react-router-dom";
 import backgroundImg from '../assets/images/background.jpg';
 
-// Example images, replace with your own
-// import top100Img from '../assets/images/top100.jpg';
-// import artistsImg from '../assets/images/artists.jpg';
-// import allTimeImg from '../assets/images/alltime.jpg';
-// import top10Img from '../assets/images/top10.jpg';
-// import weekImg from '../assets/images/week.jpg';
-// import customImg from '../assets/images/custom.jpg';
+
+import buttonIMG1 from '../assets/images/butons/buttonIMG1.jpg';
+import buttonIMG2 from '../assets/images/butons/buttonIMG2.jpg';
+import buttonIMG3 from '../assets/images/butons/buttonIMG3.jpg';
+import buttonIMG4 from '../assets/images/butons/buttonIMG4.jpg';
+import buttonIMG5 from '../assets/images/butons/buttonIMG5.jpg';
+import buttonIMG6 from '../assets/images/butons/buttonIMG6.jpg';
 
 export default function Lists() {
   const navigate = useNavigate();
 
   const listOptions = [
-    { label: "Top 100 Songs", type: "top-100-songs", img: top100Img },
-    { label: "Your Top Artists", type: "top-artists", img: artistsImg },
-    { label: "Top Songs of All Time", type: "top-songs-all-time", img: allTimeImg },
-    { label: "Top 10 Artists", type: "top-10-artists", img: top10Img },
-    { label: "Top 10 Songs This Week", type: "top-10-this-week", img: weekImg },
-    { label: "Create Custom List", type: "custom", img: customImg },
+    { label: "Top 100 Songs", type: "top-100-songs", img: buttonIMG1 },
+    { label: "Your Top Artists", type: "top-artists", img: buttonIMG2 },
+    { label: "Top Songs of All Time", type: "top-songs-all-time", img: buttonIMG3 },
+    { label: "Top 10 Artists", type: "top-10-artists", img: buttonIMG4 },
+    { label: "Top 10 Songs This Week", type: "top-10-this-week", img: buttonIMG5 },
+    { label: "Create Custom List", type: "custom", img: buttonIMG6 },
   ];
 
   return (
