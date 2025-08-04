@@ -48,53 +48,48 @@ export default function Lists() {
       <div className="card bg-dark text-white shadow rounded-4 p-4" style={{marginTop:'65px', position: 'relative', zIndex: 1 }}>
         <div className="max-w-4xl mx-auto mt-10 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">Lists</h1>
-          <div
-            className="
-              grid
-              grid-cols-1
-              sm:grid-cols-2
-              md:grid-cols-3
-              lg:grid-cols-4
-              gap-6
-            "
-          >
+          <div className="row g-4">
             {listOptions.map((list) => (
-              <button
+              <div
                 key={list.type}
-                onClick={() => navigate(`/lists/${list.type}`)}
-                className="relative flex items-center justify-center rounded-2xl shadow-lg overflow-hidden transition hover:scale-105"
-                style={{
-                  aspectRatio: '1 / 1',
-                  width: '100%',
-                  maxWidth: '220px',
-                  maxHeight: '220px',
-                  minHeight: '0',
-                  background: `url(${list.img}) center/cover no-repeat`,
-                  color: 'white',
-                  border: 'none',
-                }}
+                className="col-12 col-sm-6 col-md-4 col-lg-3 d-flex justify-content-center"
               >
-                <div
+                <button
+                  onClick={() => navigate(`/lists/${list.type}`)}
+                  className="position-relative d-flex align-items-center justify-content-center rounded-3 shadow-lg overflow-hidden border-0"
                   style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'rgba(0,0,0,0.08)', // Very light overlay
-                    borderRadius: 'inherit',
-                    pointerEvents: 'none',
-                    zIndex: 1, // Ensure overlay is below text
-                  }}
-                />
-                <span
-                  className="text-lg font-semibold text-center px-2"
-                  style={{
-                    position: 'relative',
-                    zIndex: 2, // Ensure text is above overlay
-                    textShadow: '0 1px 6px rgba(0,0,0,0.35)',
+                    aspectRatio: '1 / 1',
+                    width: '100%',
+                    maxWidth: '220px',
+                    maxHeight: '220px',
+                    minHeight: '0',
+                    background: `url(${list.img}) center/cover no-repeat`,
+                    color: 'white',
                   }}
                 >
-                  {list.label}
-                </span>
-              </button>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'rgba(0,0,0,0.08)',
+                      borderRadius: 'inherit',
+                      pointerEvents: 'none',
+                      zIndex: 1,
+                    }}
+                  />
+                  <span
+                    className="fw-semibold text-center px-2"
+                    style={{
+                      position: 'relative',
+                      zIndex: 2,
+                      textShadow: '0 1px 6px rgba(0,0,0,0.35)',
+                      fontSize: '1.1rem',
+                    }}
+                  >
+                    {list.label}
+                  </span>
+                </button>
+              </div>
             ))}
           </div>
         </div>
