@@ -30,7 +30,15 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="navbar navbar-dark bg-black px-3 justify-content-between">
+    <nav className="navbar navbar-dark bg-black px-3 justify-content-between"
+    style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+     }}    
+    >
       <div className="d-flex align-items-center gap-4">
         <div>
           <span className="navbar-brand mb-0 h1">Logo</span>
