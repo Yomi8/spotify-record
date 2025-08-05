@@ -17,7 +17,7 @@ export default function Lists() {
     { label: "Your Top Artists", type: "top-artists", img: buttonIMG2 },
     { label: "Top Songs of All Time", type: "top-songs-all-time", img: buttonIMG3 },
     { label: "Top 10 Artists", type: "top-10-artists", img: buttonIMG4 },
-    { label: "Top 10 Songs This Week", type: "top-10-this-week", img: buttonIMG5 },
+    { label: "Top 10 Songs This Year", type: "top-10-this-year", img: buttonIMG5 },
     { label: "Create Custom List", type: "custom", img: buttonIMG6 },
   ];
 
