@@ -26,20 +26,23 @@ export default function ListViewer() {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Determine API endpoint and parameters
-  const isSongList =
-    listType === "top-100-songs" ||
-    listType === "top-songs-all-time" ||
-    listType === "top-10-this-year";
+  const listOptions = [
+    { label: "Top 100 Songs", type: "top-100-songs", isSongList: true, isArtistList: false, limit: 100 },
+    { label: "Your Top Artists", type: "top-artists", isSongList: false, isArtistList: true, limit: 100 },
+    { label: "Top Songs of All Time", type: "top-songs-all-time", isSongList: true, isArtistList: false, limit: 100 },
+    { label: "Top 10 Artists", type: "top-10-artists", isSongList: false, isArtistList: true, limit: 10 },
+    { label: "Top 10 Songs This Year", type: "top-10-this-year", isSongList: true, isArtistList: false, limit: 10 },
+    { label: "Create Custom List", type: "custom", isSongList: false, isArtistList: false, limit: 0 },
+  ];
 
-  const isArtistList =
-    listType === "top-artists" ||
-    listType === "top-10-artists";
+  // Find current option
+  const currentOption = listOptions.find(opt => opt.type === listType);
 
-  const limit =
-    listType === "top-10-this-year" || listType === "top-10-artists"
-      ? 10
-      : 100;
+  // Use currentOption for everything
+  const isSongList = currentOption?.isSongList ?? false;
+  const isArtistList = currentOption?.isArtistList ?? false;
+  const limit = currentOption?.limit ?? 100;
+  const listLabel = currentOption?.label ?? "List not found";
 
   // Date filters
   let start: string | undefined;
@@ -177,7 +180,7 @@ export default function ListViewer() {
       >
         <div className="max-w-4xl mx-auto mt-10 px-4">
           <h1 className="text-2xl font-bold mb-6 text-center capitalize">
-            {listType?.replaceAll("-", " ")}
+            {listLabel}
           </h1>
           <div className="p-4 border rounded-lg shadow">
             {renderContent()}
