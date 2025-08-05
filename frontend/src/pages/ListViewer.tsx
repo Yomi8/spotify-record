@@ -94,7 +94,7 @@ export default function ListViewer() {
     switch (listType) {
       case "top-100-songs":
       case "top-songs-all-time":
-      case "top-10-this-week":
+      case "top-10-this-year":
         return (
           <table className="table table-dark table-striped">
             <thead>
