@@ -175,10 +175,17 @@ export default function ListViewer() {
 
       {/* Main content */}
       <div
-        className="card bg-dark text-white shadow rounded-4 p-4"
-        style={{ marginTop: "65px", position: "relative", zIndex: 1 }}
+        className="card bg-dark text-white shadow rounded-4"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          width: "fit-content",
+          minWidth: "300px",
+          margin: "65px auto 0 auto",
+          padding: "2rem",
+        }}
       >
-        <div className="max-w-4xl mx-auto mt-10 px-4">
+        <div className="max-w-4xl px-4">
           <h1 className="text-2xl font-bold mb-6 text-center capitalize">
             {listLabel}
           </h1>
