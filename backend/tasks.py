@@ -1,16 +1,14 @@
 import json
 import pendulum
-from spotify_auth import sp_app, safe_spotify_call, get_spotify_tokens, get_user_spotify_client, refresh_spotify_token
 import mysql.connector.pooling
 import redis
 import os
-import time
 from dotenv import load_dotenv
 import logging
 import sys
 import traceback
 
-# Configure global logger
+# Configure logger
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -22,8 +20,12 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# Import Spotify auth functions after logger setup
+from spotify_auth import sp_app, safe_spotify_call, get_spotify_tokens, get_user_spotify_client, refresh_spotify_token
+
 load_dotenv()
 
+# Spotify API credentials
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_TOKEN_INFO = {"access_token": None, "expires_at": 0}
