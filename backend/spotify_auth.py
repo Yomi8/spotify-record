@@ -28,9 +28,11 @@ def safe_spotify_call(func, *args, max_retries=5, delay=1, **kwargs):
     logger.info("safe_spotify_call called")
     for attempt in range(max_retries):
         try:
-            return func(*args, **kwargs)
+            result = func(*args, **kwargs)
+            logger.info(f"Spotify API call succeeded on attempt {attempt+1}")
+            return result
         except spotipy.exceptions.SpotifyException as e:
-            if e.http_status == 429:  # Rate limiting
+            if e.http_status == 429:
                 retry_after = int(e.headers.get("Retry-After", delay))
                 logger.warning(f"Rate limited. Retrying in {retry_after} seconds...")
                 time.sleep(retry_after)
@@ -39,7 +41,7 @@ def safe_spotify_call(func, *args, max_retries=5, delay=1, **kwargs):
                 raise
         except (requests.exceptions.RequestException, Exception) as e:
             logger.warning(f"Error calling Spotify API (attempt {attempt+1}): {e}")
-            time.sleep(delay * (2 ** attempt))  # Exponential backoff
+            time.sleep(delay * (2 ** attempt))
     raise Exception("Max retries exceeded for Spotify API call")
 
 def save_spotify_tokens(user_id, access_token, refresh_token, expires_at):
