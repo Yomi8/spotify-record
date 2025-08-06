@@ -471,25 +471,29 @@ def search_songs_artists():
     if not query:
         return jsonify({"error": "Missing search query"}), 400
 
-    # Search songs matching track name or artist name
+    # Search songs
     songs = run_query("""
         SELECT
             s.song_id,
             s.track_name,
             a.artist_name,
-            JSON_UNQUOTE(JSON_EXTRACT(s.image_url, '$')) AS image_url
+            s.image_url
         FROM core_songs s
         JOIN core_artists a ON s.artist_id = a.artist_id
         WHERE s.track_name LIKE %s OR a.artist_name LIKE %s
         LIMIT 30
     """, (f"%{query}%", f"%{query}%"), dict_cursor=True)
 
-    # Search artists matching artist name
+    # Search artists with safe JSON extraction
     artists = run_query("""
         SELECT
             artist_id,
             artist_name,
-            JSON_UNQUOTE(JSON_EXTRACT(artist_images, '$[0].url')) AS image_url
+            CASE
+                WHEN JSON_VALID(artist_images)
+                THEN JSON_UNQUOTE(JSON_EXTRACT(artist_images, '$[0].url'))
+                ELSE NULL
+            END AS image_url
         FROM core_artists
         WHERE artist_name LIKE %s
         LIMIT 30
@@ -499,6 +503,7 @@ def search_songs_artists():
         "songs": songs,
         "artists": artists
     }), 200
+
 
 @app.route('/api/song/<song_id>', methods=['GET'])
 def get_song_details(song_id):
