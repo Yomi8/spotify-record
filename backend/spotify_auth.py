@@ -17,6 +17,8 @@ redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
 if not client_id or not client_secret:
     raise Exception("SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET not set")
 
+logger = logging.getLogger(__name__)
+
 # Used for app-level Spotify metadata lookups (e.g., song info)
 app_auth_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 sp_app = Spotify(auth_manager=app_auth_manager)
@@ -32,13 +34,13 @@ def safe_spotify_call(func, *args, max_retries=5, delay=1, **kwargs):
         except spotipy.exceptions.SpotifyException as e:
             if e.http_status == 429:  # Rate limiting
                 retry_after = int(e.headers.get("Retry-After", delay))
-                logging.warning(f"Rate limited. Retrying in {retry_after} seconds...")
+                logger.warning(f"Rate limited. Retrying in {retry_after} seconds...")
                 time.sleep(retry_after)
             else:
-                logging.error(f"Spotify API error: {e}")
+                logger.error(f"Spotify API error: {e}")
                 raise
         except (requests.exceptions.RequestException, Exception) as e:
-            logging.warning(f"Error calling Spotify API (attempt {attempt+1}): {e}")
+            logger.warning(f"Error calling Spotify API (attempt {attempt+1}): {e}")
             time.sleep(delay * (2 ** attempt))  # Exponential backoff
     raise Exception("Max retries exceeded for Spotify API call")
 

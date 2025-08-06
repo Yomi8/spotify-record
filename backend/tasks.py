@@ -22,7 +22,6 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-
 load_dotenv()
 
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
