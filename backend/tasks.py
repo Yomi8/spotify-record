@@ -124,7 +124,8 @@ def get_or_create_song(spotify_uri, spotify):
     existing_song = run_query(
         "SELECT song_id FROM core_songs WHERE spotify_uri = %s",
         (spotify_uri,),
-        fetchone=True
+        fetchone=True,
+        dict_cursor=True
     )
     if existing_song:
         logger.debug(f"Existing song found with song_id: {existing_song['song_id']} for URI: {spotify_uri}")
