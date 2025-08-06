@@ -10,15 +10,15 @@ type ArtistDetails = {
 };
 
 export default function ArtistDetails() {
-  const { id } = useParams<{ id: string }>();
+  const { artistId } = useParams<{ artistId: string }>();
   const [artist, setArtist] = useState<ArtistDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!artistId) return;
 
-    fetch(`/api/artist/${id}`)
+    fetch(`/api/artist/${artistId}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error("Failed to fetch artist");
@@ -33,7 +33,7 @@ export default function ArtistDetails() {
         setError(err.message);
         setLoading(false);
       });
-  }, [id]);
+  }, [artistId]);
 
   if (loading) return <div className="p-4">Loading...</div>;
   if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
