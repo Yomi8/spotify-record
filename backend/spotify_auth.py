@@ -25,9 +25,7 @@ sp_app = Spotify(auth_manager=app_auth_manager)
 
 
 def safe_spotify_call(func, *args, max_retries=5, delay=1, **kwargs):
-    """
-    Wraps a Spotify API call with automatic retry on failure.
-    """
+    logger.info("safe_spotify_call called")
     for attempt in range(max_retries):
         try:
             return func(*args, **kwargs)
