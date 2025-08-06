@@ -473,7 +473,11 @@ def search_songs_artists():
 
     # Search songs matching track name or artist name
     songs = run_query("""
-        SELECT s.song_id, s.track_name, a.artist_name, s.image_url
+        SELECT
+            s.song_id,
+            s.track_name,
+            a.artist_name,
+            JSON_UNQUOTE(JSON_EXTRACT(s.image_url, '$')) AS image_url
         FROM core_songs s
         JOIN core_artists a ON s.artist_id = a.artist_id
         WHERE s.track_name LIKE %s OR a.artist_name LIKE %s
@@ -482,7 +486,10 @@ def search_songs_artists():
 
     # Search artists matching artist name
     artists = run_query("""
-        SELECT artist_id, artist_name, image_url
+        SELECT
+            artist_id,
+            artist_name,
+            JSON_UNQUOTE(JSON_EXTRACT(artist_images, '$[0].url')) AS image_url
         FROM core_artists
         WHERE artist_name LIKE %s
         LIMIT 30
@@ -559,33 +566,29 @@ def get_song_details(song_id):
 
     return jsonify(song), 200
 
-@app.route('/api/artists/<int:artist_id>', methods=['GET'])
-@jwt_required()
+@app.route('/api/artist/<int:artist_id>', methods=['GET'])
 def get_artist_details(artist_id):
-    auth0_id = get_jwt_identity()
-    user_id = get_user_id_from_auth0(auth0_id)
-    if not user_id:
-        return jsonify({"error": "User not found"}), 404
-
-    query = """
-        SELECT 
-            a.artist_id,
-            a.name,
-            a.spotify_uri,
-            a.image_url,
-            COUNT(*) AS total_streams
+    artist = run_query("""
+        SELECT
+            artist_id,
+            artist_name AS name,
+            artist_uri AS spotify_uri,
+            artist_followers,
+            artist_popularity,
+            JSON_UNQUOTE(JSON_EXTRACT(artist_images, '$[0].url')) AS image_url,
+            (
+                SELECT COUNT(*) FROM usage_logs ul
+                JOIN core_songs cs ON ul.song_id = cs.song_id
+                WHERE cs.artist_id = a.artist_id
+            ) AS total_streams
         FROM core_artists a
-        JOIN core_songs s ON a.artist_id = s.artist_id
-        JOIN usage_logs u ON s.song_id = u.song_id
-        WHERE u.user_id = %s AND a.artist_id = %s
-        GROUP BY a.artist_id
-    """
-    result = run_query(query, (user_id, artist_id))
+        WHERE artist_id = %s
+    """, (artist_id,), dict_cursor=True)
 
-    if not result:
+    if not artist:
         return jsonify({"error": "Artist not found"}), 404
 
-    return jsonify(result[0])
+    return jsonify(artist[0]), 200
 
 @app.route('/api/lists/songs', methods=['GET'])
 @jwt_required()
