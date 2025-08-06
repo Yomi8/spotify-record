@@ -21,6 +21,7 @@ import pendulum
 import requests
 from base64 import b64encode
 import urllib.parse
+import logging
 
 # Spotipy imports
 from spotipy import Spotify
@@ -64,6 +65,15 @@ app.config["SESSION_COOKIE_DOMAIN"] = "yomi16.nz"
 
 jwt = JWTManager(app)
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler("app.log"),        # Writes to file
+        logging.StreamHandler()                # Also prints to console
+    ]
+)
+
 # RQ config
 app.config['RQ_REDIS_URL'] = 'redis://localhost:6379/0'
 redis_conn = Redis.from_url(app.config['RQ_REDIS_URL'])
@@ -96,29 +106,28 @@ def spotify_login():
         verify_jwt_in_request()
         auth0_id = get_jwt_identity()
     except Exception as e:
+        logging.warning("JWT verification failed: %s", e)
         return {"msg": "Invalid token"}, 401
 
     session["auth0_id"] = auth0_id
-
-    # Create a new SpotifyOAuth instance for this request
     sp_oauth_local = get_local_spotify_oauth()
     auth_url = sp_oauth_local.get_authorize_url()
-    print(f"Auth URL: {auth_url}", flush=True)
+    logging.info("Redirecting user to Spotify auth URL: %s", auth_url)
     return redirect(auth_url)
 
 @app.route("/api/spotify/callback")
 def spotify_callback():
     code = request.args.get("code")
-    print(f"Spotify callback code: {code}", flush=True)
-    print(f"Session contents: {dict(session)}", flush=True)
+    logging.info("Spotify callback received with code: %s", code)
+    logging.debug("Session contents: %s", dict(session))
 
     sp_oauth_local = get_local_spotify_oauth("user-read-recently-played")
 
     try:
         token_info = sp_oauth_local.get_access_token(code)
-        print(f"[DEBUG] token_info: {json.dumps(token_info, indent=2)}", flush=True)
+        logging.debug("Spotify token info: %s", json.dumps(token_info, indent=2))
     except Exception as e:
-        print(f"Spotify token exchange error: {e}", flush=True)
+        logging.error("Spotify token exchange error: %s", e)
         if "invalid_grant" in str(e):
             auth0_id = session.get("auth0_id")
             if auth0_id:
@@ -128,42 +137,38 @@ def spotify_callback():
         return jsonify({"error": f"Failed to get access token: {str(e)}"}), 500
 
     auth0_id = session.get("auth0_id")
-    print(f"auth0_id from session: {auth0_id}", flush=True)
     if not auth0_id:
         return jsonify({"error": "Missing user session"}), 400
 
     user_id = get_user_id_from_auth0(auth0_id)
-    print(f"user_id from db: {user_id}", flush=True)
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
     access_token = token_info.get("access_token")
     refresh_token = token_info.get("refresh_token")
     expires_at = token_info.get("expires_at")
-    
+
     if not refresh_token:
         existing_tokens = get_spotify_tokens(user_id)
-        print(f"[DEBUG] Existing tokens for user_id={user_id}: {existing_tokens}", flush=True)
+        logging.debug("Existing tokens for user_id %s: %s", user_id, existing_tokens)
         if existing_tokens:
             refresh_token = existing_tokens["refresh_token"]
-            print("Reusing existing refresh token", flush=True)
+            logging.info("Reusing existing refresh token")
 
     if not (access_token and refresh_token and expires_at):
         return jsonify({"error": "Incomplete token information"}), 500
 
     try:
-        print(f"[DEBUG] Saving tokens for user_id={user_id}")
-        print(f"[DEBUG] access_token={access_token[:10]}..., refresh_token={refresh_token[:10]}..., expires_at={expires_at}", flush=True)
+        logging.info("Saving Spotify tokens for user_id=%s", user_id)
         save_spotify_tokens(user_id, access_token, refresh_token, expires_at)
-        
-        # New code to fetch and print Spotify profile information
+
         sp = Spotify(auth=access_token)
         profile = sp.current_user()
         email = profile.get("email", "N/A")
-        print(f"[DEBUG] Spotify profile for user_id={user_id}: {email} ({profile['id']})", flush=True)
-        
+        logging.info("Fetched Spotify profile: %s (%s)", email, profile.get("id"))
         return redirect("/")
     except Exception as e:
+        logging.error("Failed to save Spotify tokens or fetch profile: %s", e)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/spotify/recent", methods=["GET"])
@@ -171,7 +176,6 @@ def spotify_callback():
 def get_recently_played():
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id)
-
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
@@ -180,38 +184,36 @@ def get_recently_played():
         return jsonify({"error": "Spotify not connected"}), 400
 
     sp_user = get_user_spotify_client(token_row["access_token"])
-
     try:
         recent = sp_user.current_user_recently_played(limit=50)
         return jsonify(recent), 200
     except Exception as e:
+        logging.error("Error fetching recently played: %s", e)
         return jsonify({"error": "Failed to fetch data", "details": str(e)}), 500
 
-# Check if database is connected
 @app.route('/api/status', methods=['GET'])
 def db_status():
     try:
         run_query("SELECT 1")
         return jsonify({"status": "OK", "message": "Database connected"}), 200
     except Exception as e:
+        logging.error("Database connection check failed: %s", e)
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
-# Get status of a job by ID
 @app.route("/api/job-status/<job_id>")
 def job_status(job_id):
     try:
         conn = Redis.from_url(app.config['RQ_REDIS_URL'])
         job = Job.fetch(job_id, connection=conn)
         status = job.get_status()
-
         return jsonify({
             "job_id": job.id,
             "status": status,
             "result": job.result,
             "error": job.exc_info if job.is_failed else None,
         }), 200
-
     except Exception as e:
+        logging.error("Error fetching job status: %s", e)
         return jsonify({"status": "failed", "error": str(e)}), 200
 
 # Sync user data from Auth0
