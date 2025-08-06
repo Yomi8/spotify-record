@@ -1,6 +1,6 @@
 import json
 import pendulum
-from spotify_auth import sp_app, get_spotify_tokens, get_user_spotify_client, refresh_spotify_token
+from spotify_auth import sp_app, safe_spotify_call, get_spotify_tokens, get_user_spotify_client, refresh_spotify_token
 import mysql.connector.pooling
 import redis
 import os
@@ -8,6 +8,7 @@ import time
 from dotenv import load_dotenv
 import logging
 import sys
+import traceback
 
 # Configure global logger
 logging.basicConfig(
@@ -76,174 +77,231 @@ def get_artist_metadata(artist_id):
         logger.error(f"Error fetching artist metadata for ID {artist_id}: {e}")
         return None
 
-def get_or_create_artist(cursor, artist_uri):
-    # Check if artist exists by artist_uri
-    cursor.execute("SELECT artist_id FROM core_artists WHERE artist_uri = %s", (artist_uri,))
-    row = cursor.fetchone()
-    if row:
-        return row[0]
-    # Fetch from Spotify and insert
-    spotify_artist_id = artist_uri.split(":")[-1]
-    artist_data = get_artist_metadata(spotify_artist_id)
-    if not artist_data:
+def get_or_create_artist(spotify_artist_id, spotify):
+    # Check if artist already exists
+    existing_artist = run_query(
+        "SELECT artist_id FROM core_artists WHERE spotify_artist_id = %s",
+        (spotify_artist_id,),
+        fetchone=True
+    )
+    if existing_artist:
+        return existing_artist['artist_id']
+    
+    # Fetch from Spotify
+    artist = safe_spotify_call(lambda: spotify.artist(spotify_artist_id))
+    if not artist:
         return None
-    cursor.execute("""
+
+    run_query("""
         INSERT INTO core_artists (
-            artist_uri, artist_name, artist_href, artist_external_urls,
-            artist_followers, artist_genres, artist_images, artist_popularity
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            spotify_artist_id,
+            artist_name,
+            artist_uri,
+            artist_href,
+            artist_external_urls,
+            artist_followers,
+            artist_genres,
+            artist_images,
+            artist_popularity
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
-        artist_data["artist_uri"],
-        artist_data["artist_name"],
-        artist_data["artist_href"],
-        json.dumps(artist_data["artist_external_urls"]),
-        artist_data["artist_followers"],
-        json.dumps(artist_data["artist_genres"]),
-        json.dumps(artist_data["artist_images"]),
-        artist_data["artist_popularity"],
+        artist['id'],
+        artist['name'],
+        artist.get('uri'),
+        artist.get('href'),
+        json.dumps(artist.get('external_urls', {})),
+        artist.get('followers', {}).get('total'),
+        json.dumps(artist.get('genres', [])),
+        json.dumps(artist.get('images', [])),
+        artist.get('popularity')
     ))
-    return cursor.lastrowid
+    
+    new_artist = run_query(
+        "SELECT artist_id FROM core_artists WHERE spotify_artist_id = %s",
+        (spotify_artist_id,),
+        fetchone=True
+    )
+    return new_artist['artist_id'] if new_artist else None
 
-def get_track_metadata(uri):
-    track_id = uri.split(":")[-1]
-    try:
-        logger.info("Fetching metadata for track ID: %s", track_id)
-        track = sp_app.track(track_id)
-        album = track["album"]
-        artist = track["artists"][0]
-        return {
-            "track_name": track["name"],
-            "artist_name": artist["name"],
-            "artist_uri": artist["uri"],
-            "album_name": album["name"],
-            "album_id": album["id"],
-            "album_type": album.get("album_type"),
-            "album_uri": album.get("uri"),
-            "release_date": album.get("release_date"),
-            "release_date_precision": album.get("release_date_precision"),
-            "duration_ms": track["duration_ms"],
-            "is_explicit": track["explicit"],
-            "image_url": album["images"][0]["url"] if album["images"] else None,
-            "preview_url": track.get("preview_url"),
-            "popularity": track.get("popularity"),
-            "is_local": track.get("is_local", False)
-        }
-    except Exception as e:
-        logger.error(f"Error fetching track metadata for URI {uri}: {e}")
+def get_or_create_song(spotify_uri, spotify):
+    # Check if song already exists
+    existing_song = run_query(
+        "SELECT song_id FROM core_songs WHERE spotify_uri = %s",
+        (spotify_uri,),
+        fetchone=True
+    )
+    if existing_song:
+        return existing_song['song_id']
+
+    # Fetch from Spotify
+    track = safe_spotify_call(lambda: spotify.track(spotify_uri))
+    if not track:
         return None
 
-def process_spotify_json_file(file_path, user_id):
+    artist_id = None
+    if track['artists']:
+        artist_id = get_or_create_artist(track['artists'][0]['id'], spotify)
+
+    album = track.get('album', {})
+    run_query("""
+        INSERT INTO core_songs (
+            spotify_uri,
+            track_name,
+            artist_id,
+            album_name,
+            album_id,
+            album_type,
+            album_uri,
+            release_date,
+            release_date_precision,
+            duration_ms,
+            is_explicit,
+            image_url,
+            preview_url,
+            popularity,
+            is_local
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        track['uri'],
+        track['name'],
+        artist_id,
+        album.get('name'),
+        album.get('id'),
+        album.get('album_type'),
+        album.get('uri'),
+        album.get('release_date'),
+        album.get('release_date_precision'),
+        track.get('duration_ms'),
+        int(track.get('explicit', False)),
+        album.get('images', [{}])[0].get('url'),
+        track.get('preview_url'),
+        track.get('popularity'),
+        int(track.get('is_local', False))
+    ))
+
+    new_song = run_query(
+        "SELECT song_id FROM core_songs WHERE spotify_uri = %s",
+        (spotify_uri,),
+        fetchone=True
+    )
+    return new_song['song_id'] if new_song else None
+
+def process_spotify_json_file(filepath, user_id):
     try:
-        with open(file_path, "r") as f:
-            data = json.load(f)
+        with open(filepath, "r", encoding="utf-8") as f:
+            streams = json.load(f)
 
-        if not isinstance(data, list):
-            raise ValueError("Invalid JSON structure: expected a list")
+        insert_usage_logs = []
 
-        inserted = 0
-        conn = db_pool.get_connection()
-        cursor = conn.cursor()
-
-        total = len(data)
-        for index, entry in enumerate(data):
-            logger.info(f"Processing entry {index + 1} of {total}, inserted so far: {inserted}")
-
-            ts_str = entry.get("ts")
+        for entry in streams:
+            ts = entry["ts"]
             track_uri = entry.get("spotify_track_uri")
-            if not ts_str or not track_uri:
-                continue
+            artist_uri = entry.get("spotify_artist_uri")
 
-            try:
-                ts = pendulum.parse(ts_str).to_datetime_string()
-            except Exception:
-                continue
-
-            cursor.execute(
-                "SELECT 1 FROM usage_logs WHERE user_id = %s AND ts = %s",
-                (user_id, ts)
+            print(f"Checking for existing usage_log entry at {ts}...")
+            exists = run_query(
+                "SELECT 1 FROM usage_logs WHERE user_id = %s AND ts = %s LIMIT 1",
+                (user_id, ts),
+                fetchone=True
             )
-            if cursor.fetchone():
+            if exists:
+                print("Already exists. Skipping.")
                 continue
 
-            cursor.execute("SELECT song_id FROM core_songs WHERE spotify_uri = %s", (track_uri,))
-            song_row = cursor.fetchone()
+            song_id = None
+            if track_uri:
+                print(f"Checking for track {track_uri} in core_songs...")
+                song_row = run_query(
+                    "SELECT song_id FROM core_songs WHERE spotify_uri = %s",
+                    (track_uri,),
+                    fetchone=True,
+                    dict_cursor=True
+                )
 
-            if song_row:
-                song_id = song_row[0]
-            else:
-                metadata = get_track_metadata(track_uri)
-                if not metadata:
-                    continue
+                if song_row:
+                    song_id = song_row["song_id"]
+                    print(f"Found existing song_id {song_id}")
+                else:
+                    print(f"Track not found. Fetching {track_uri} from Spotify...")
+                    track_data = safe_spotify_call(sp_app.track, track_uri)
+                    if not track_data:
+                        print("Spotify track lookup failed. Skipping track.")
+                        continue
 
-                # Get or create artist and get artist_id (int)
-                artist_id = get_or_create_artist(cursor, metadata["artist_uri"])
-                if not artist_id:
-                    continue
+                    song_id = run_query(
+                        """
+                        INSERT INTO core_songs (spotify_uri, track_name, artist_name, album_name)
+                        VALUES (%s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE track_name = VALUES(track_name)
+                        """,
+                        (
+                            track_uri,
+                            track_data["name"],
+                            track_data["artists"][0]["name"],
+                            track_data["album"]["name"]
+                        ),
+                        commit=True,
+                        return_lastrowid=True
+                    )
+                    print(f"Inserted new song {track_data['name']} with song_id {song_id}")
 
-                cursor.execute("""
-                    INSERT INTO core_songs (
-                        spotify_uri, track_name, artist_id,
-                        album_name, album_id, album_type, album_uri,
-                        release_date, release_date_precision,
-                        duration_ms, is_explicit,
-                        image_url, preview_url, popularity, is_local
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, (
-                    track_uri,
-                    metadata["track_name"],
-                    artist_id,
-                    metadata["album_name"],
-                    metadata["album_id"],
-                    metadata["album_type"],
-                    metadata["album_uri"],
-                    metadata["release_date"],
-                    metadata["release_date_precision"],
-                    metadata["duration_ms"],
-                    int(metadata["is_explicit"]),
-                    metadata["image_url"],
-                    metadata["preview_url"],
-                    metadata["popularity"],
-                    int(metadata["is_local"]),
-                ))
-                song_id = cursor.lastrowid
+                    # Ensure artist is also present
+                    primary_artist = track_data["artists"][0]
+                    artist_uri = primary_artist["uri"]
+                    print(f"Checking for artist {artist_uri} in core_artists...")
+                    artist_exists = run_query(
+                        "SELECT 1 FROM core_artists WHERE spotify_uri = %s",
+                        (artist_uri,),
+                        fetchone=True
+                    )
+                    if not artist_exists:
+                        print(f"Artist not found. Fetching {artist_uri} from Spotify...")
+                        artist_data = safe_spotify_call(sp_app.artist, artist_uri)
+                        if not artist_data:
+                            print("Spotify artist lookup failed. Skipping artist.")
+                        else:
+                            run_query(
+                                """
+                                INSERT INTO core_artists (spotify_uri, artist_name, genres)
+                                VALUES (%s, %s, %s)
+                                ON DUPLICATE KEY UPDATE artist_name = VALUES(artist_name)
+                                """,
+                                (
+                                    artist_uri,
+                                    artist_data["name"],
+                                    ", ".join(artist_data.get("genres", []))
+                                ),
+                                commit=True
+                            )
+                            print(f"Inserted new artist {artist_data['name']}")
 
-            cursor.execute("""
-                INSERT INTO usage_logs (
-                    user_id, song_id, ts, ms_played, platform, conn_country, ip_addr,
-                    spotify_track_uri, episode_name, episode_show_name, reason_start,
-                    reason_end, shuffle, skipped, offline, offline_timestamp, incognito_mode
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                user_id,
-                song_id,
-                ts,
-                entry.get("ms_played"),
-                entry.get("platform"),
-                entry.get("conn_country"),
-                entry.get("ip_addr"),
-                track_uri,
-                entry.get("episode_name"),
-                entry.get("episode_show_name"),
-                entry.get("reason_start"),
-                entry.get("reason_end"),
-                entry.get("shuffle"),
-                entry.get("skipped"),
-                entry.get("offline"),
-                entry.get("offline_timestamp"),
-                entry.get("incognito_mode"),
-            ))
+            # Build usage log entry
+            ts_dt = pendulum.parse(ts)
+            insert_usage_logs.append((user_id, song_id, ts_dt.to_datetime_string()))
 
-            inserted += 1
+        if insert_usage_logs:
+            print(f"Inserting {len(insert_usage_logs)} usage logs...")
+            run_query(
+                """
+                INSERT INTO usage_logs (user_id, song_id, ts)
+                VALUES (%s, %s, %s)
+                """,
+                insert_usage_logs,
+                many=True,
+                commit=True
+            )
 
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        return {"status": "COMPLETE", "inserted": inserted, "total": total}
+        os.remove(filepath)
+        print("File removed after successful processing.")
 
     except Exception as e:
-        logger.error(f"[{index}] Error processing entry: {e}", exc_info=True)
+        print("Error occurred during processing:")
+        traceback.print_exc()
         raise
+
+
 
 def get_range_bounds(now, range_type):
     if range_type == 'day':
