@@ -43,17 +43,25 @@ db_pool = mysql.connector.pooling.MySQLConnectionPool(
 )
 
 # Basic query execution
-def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=False):
+def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=False, many=False, return_lastrowid=False):
     conn = db_pool.get_connection()
     try:
         with conn.cursor(dictionary=dict_cursor) as cursor:
-            cursor.execute(query, params or ())
-            result = (
-                cursor.fetchone() if fetchone else
-                cursor.fetchall() if cursor.with_rows else None
-            )
-        if commit:
-            conn.commit()
+            if many:
+                cursor.executemany(query, params)
+            else:
+                cursor.execute(query, params or ())
+            result = None
+            if return_lastrowid and commit:
+                conn.commit()
+                result = cursor.lastrowid
+            else:
+                if fetchone:
+                    result = cursor.fetchone()
+                elif cursor.with_rows:
+                    result = cursor.fetchall()
+            if commit and not return_lastrowid:
+                conn.commit()
         return result
     finally:
         conn.close()
