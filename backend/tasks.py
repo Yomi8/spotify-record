@@ -119,7 +119,7 @@ def get_or_create_artist(spotify_artist_id, spotify):
     return new_artist['artist_id'] if new_artist else None
 
 def get_or_create_song(spotify_uri, spotify):
-    logger.info(f"Attempting to get or create song for URI: {spotify_uri}")
+    logger.debug(f"Starting get_or_create_song for URI: {spotify_uri}")
     # Check if song already exists
     existing_song = run_query(
         "SELECT song_id FROM core_songs WHERE spotify_uri = %s",
@@ -127,70 +127,89 @@ def get_or_create_song(spotify_uri, spotify):
         fetchone=True
     )
     if existing_song:
-        logger.info(f"Found existing song_id {existing_song['song_id']} for URI: {spotify_uri}")
+        logger.debug(f"Existing song found with song_id: {existing_song['song_id']} for URI: {spotify_uri}")
         return existing_song['song_id']
 
     try:
-        # Fetch from Spotify API wrapped in safe_spotify_call
+        logger.debug(f"Calling safe_spotify_call to fetch track for URI: {spotify_uri}")
         track = safe_spotify_call(lambda: spotify.track(spotify_uri))
+        logger.debug(f"Successfully fetched track data for URI: {spotify_uri}")
     except Exception as e:
-        logger.error(f"Error fetching track for URI {spotify_uri}: {e}")
+        logger.error(f"Exception fetching track for URI {spotify_uri}: {e}")
         logger.debug(traceback.format_exc())
         return None
 
     if not track:
         logger.warning(f"No track data returned for URI: {spotify_uri}")
         return None
+    logger.debug(f"Track data is present for URI: {spotify_uri}")
 
     artist_id = None
     if track.get('artists'):
-        artist_id = get_or_create_artist(track['artists'][0]['id'], spotify)
+        try:
+            logger.debug(f"Getting or creating artist for artist_id: {track['artists'][0]['id']}")
+            artist_id = get_or_create_artist(track['artists'][0]['id'], spotify)
+            logger.debug(f"Artist ID obtained: {artist_id}")
+        except Exception as e:
+            logger.error(f"Exception in get_or_create_artist for artist_id {track['artists'][0]['id']}: {e}")
+            logger.debug(traceback.format_exc())
 
     album = track.get('album', {})
-    run_query("""
-        INSERT INTO core_songs (
-            spotify_uri,
-            track_name,
+    try:
+        logger.debug(f"Inserting new song into core_songs for URI: {spotify_uri}")
+        run_query("""
+            INSERT INTO core_songs (
+                spotify_uri,
+                track_name,
+                artist_id,
+                album_name,
+                album_id,
+                album_type,
+                album_uri,
+                release_date,
+                release_date_precision,
+                duration_ms,
+                is_explicit,
+                image_url,
+                preview_url,
+                popularity,
+                is_local
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            track['uri'],
+            track['name'],
             artist_id,
-            album_name,
-            album_id,
-            album_type,
-            album_uri,
-            release_date,
-            release_date_precision,
-            duration_ms,
-            is_explicit,
-            image_url,
-            preview_url,
-            popularity,
-            is_local
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, (
-        track['uri'],
-        track['name'],
-        artist_id,
-        album.get('name'),
-        album.get('id'),
-        album.get('album_type'),
-        album.get('uri'),
-        album.get('release_date'),
-        album.get('release_date_precision'),
-        track.get('duration_ms'),
-        int(track.get('explicit', False)),
-        album.get('images', [{}])[0].get('url'),
-        track.get('preview_url'),
-        track.get('popularity'),
-        int(track.get('is_local', False))
-    ))
+            album.get('name'),
+            album.get('id'),
+            album.get('album_type'),
+            album.get('uri'),
+            album.get('release_date'),
+            album.get('release_date_precision'),
+            track.get('duration_ms'),
+            int(track.get('explicit', False)),
+            album.get('images', [{}])[0].get('url'),
+            track.get('preview_url'),
+            track.get('popularity'),
+            int(track.get('is_local', False))
+        ))
+        logger.debug(f"Song inserted into core_songs for URI: {spotify_uri}")
+    except Exception as e:
+        logger.error(f"Failed to insert song for URI {spotify_uri}: {e}")
+        logger.debug(traceback.format_exc())
+        return None
 
     new_song = run_query(
         "SELECT song_id FROM core_songs WHERE spotify_uri = %s",
         (spotify_uri,),
         fetchone=True
     )
-    logger.info(f"Created new song_id {new_song['song_id']} for URI: {spotify_uri}" if new_song else f"Failed to create song for URI: {spotify_uri}")
-    return new_song['song_id'] if new_song else None
+    if new_song:
+        logger.debug(f"New song_id {new_song['song_id']} retrieved for URI: {spotify_uri}")
+        return new_song['song_id']
+    else:
+        logger.warning(f"Failed to retrieve song after insert for URI: {spotify_uri}")
+        return None
 
 def process_spotify_json_file(filepath, user_id):
     try:
