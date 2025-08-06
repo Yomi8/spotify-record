@@ -242,7 +242,7 @@ def process_spotify_json_file(file_path, user_id):
         return {"status": "COMPLETE", "inserted": inserted, "total": total}
 
     except Exception as e:
-        logger.error(f"Error in process_spotify_json_file: {e}")
+        logger.error(f"[{index}] Error processing entry: {e}", exc_info=True)
         raise
 
 def get_range_bounds(now, range_type):
