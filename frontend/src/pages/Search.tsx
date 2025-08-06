@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import backgroundImg from '../assets/images/background.jpg';
-import { Link } from "react-router-dom";
 
 export default function Search() {
   const [query, setQuery] = useState("");
