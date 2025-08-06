@@ -192,7 +192,7 @@ def get_or_create_song(spotify_uri, spotify):
             track.get('preview_url'),
             track.get('popularity'),
             int(track.get('is_local', False))
-        ))
+        ), commit=True)
         logger.debug(f"Song inserted into core_songs for URI: {spotify_uri}")
     except Exception as e:
         logger.error(f"Failed to insert song for URI {spotify_uri}: {e}")
