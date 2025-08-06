@@ -90,7 +90,8 @@ def get_or_create_artist(spotify_artist_id, spotify):
     existing_artist = run_query(
         "SELECT artist_id FROM core_artists WHERE spotify_artist_id = %s",
         (spotify_artist_id,),
-        fetchone=True
+        fetchone=True,
+        dict_cursor=True
     )
     if existing_artist:
         return existing_artist['artist_id']
@@ -122,12 +123,13 @@ def get_or_create_artist(spotify_artist_id, spotify):
         json.dumps(artist.get('genres', [])),
         json.dumps(artist.get('images', [])),
         artist.get('popularity')
-    ))
+    ), commit=True)
     
     new_artist = run_query(
         "SELECT artist_id FROM core_artists WHERE spotify_artist_id = %s",
         (spotify_artist_id,),
-        fetchone=True
+        fetchone=True,
+        dict_cursor=True
     )
     return new_artist['artist_id'] if new_artist else None
 
