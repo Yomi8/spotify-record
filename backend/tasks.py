@@ -207,91 +207,35 @@ def process_spotify_json_file(filepath, user_id):
         for entry in streams:
             ts = entry["ts"]
             track_uri = entry.get("spotify_track_uri")
-            artist_uri = entry.get("spotify_artist_uri")
 
-            print(f"Checking for existing usage_log entry at {ts}...")
+            logger.info(f"Checking for existing usage_log entry at {ts} for user {user_id}...")
             exists = run_query(
                 "SELECT 1 FROM usage_logs WHERE user_id = %s AND ts = %s LIMIT 1",
                 (user_id, ts),
                 fetchone=True
             )
             if exists:
-                print("Already exists. Skipping.")
+                logger.info(f"Usage log for {ts} already exists. Skipping.")
                 continue
 
             song_id = None
             if track_uri:
-                print(f"Checking for track {track_uri} in core_songs...")
-                song_row = run_query(
-                    "SELECT song_id FROM core_songs WHERE spotify_uri = %s",
-                    (track_uri,),
-                    fetchone=True,
-                    dict_cursor=True
-                )
-
-                if song_row:
-                    song_id = song_row["song_id"]
-                    print(f"Found existing song_id {song_id}")
-                else:
-                    print(f"Track not found. Fetching {track_uri} from Spotify...")
-                    track_data = safe_spotify_call(sp_app.track, track_uri)
-                    if not track_data:
-                        print("Spotify track lookup failed. Skipping track.")
-                        continue
-
-                    song_id = run_query(
-                        """
-                        INSERT INTO core_songs (spotify_uri, track_name, artist_name, album_name)
-                        VALUES (%s, %s, %s, %s)
-                        ON DUPLICATE KEY UPDATE track_name = VALUES(track_name)
-                        """,
-                        (
-                            track_uri,
-                            track_data["name"],
-                            track_data["artists"][0]["name"],
-                            track_data["album"]["name"]
-                        ),
-                        commit=True,
-                        return_lastrowid=True
-                    )
-                    print(f"Inserted new song {track_data['name']} with song_id {song_id}")
-
-                    # Ensure artist is also present
-                    primary_artist = track_data["artists"][0]
-                    artist_uri = primary_artist["uri"]
-                    print(f"Checking for artist {artist_uri} in core_artists...")
-                    artist_exists = run_query(
-                        "SELECT 1 FROM core_artists WHERE spotify_uri = %s",
-                        (artist_uri,),
-                        fetchone=True
-                    )
-                    if not artist_exists:
-                        print(f"Artist not found. Fetching {artist_uri} from Spotify...")
-                        artist_data = safe_spotify_call(sp_app.artist, artist_uri)
-                        if not artist_data:
-                            print("Spotify artist lookup failed. Skipping artist.")
-                        else:
-                            run_query(
-                                """
-                                INSERT INTO core_artists (spotify_uri, artist_name, genres)
-                                VALUES (%s, %s, %s)
-                                ON DUPLICATE KEY UPDATE artist_name = VALUES(artist_name)
-                                """,
-                                (
-                                    artist_uri,
-                                    artist_data["name"],
-                                    ", ".join(artist_data.get("genres", []))
-                                ),
-                                commit=True
-                            )
-                            print(f"Inserted new artist {artist_data['name']}")
+                logger.info(f"Processing track URI: {track_uri}")
+                # Use the robust get_or_create_song function
+                song_id = get_or_create_song(track_uri, sp_app)
+                if not song_id:
+                    logger.warning(f"Failed to get or create song for URI {track_uri}. Skipping usage log entry.")
+                    continue
+            else:
+                logger.warning(f"No spotify_track_uri found for entry at {ts}. Skipping usage log entry.")
+                continue
 
             # Build usage log entry
             ts_dt = pendulum.parse(ts)
             insert_usage_logs.append((user_id, song_id, ts_dt.to_datetime_string()))
 
         if insert_usage_logs:
-            print(f"Inserting {len(insert_usage_logs)} usage logs...")
+            logger.info(f"Inserting {len(insert_usage_logs)} usage logs...")
             run_query(
                 """
                 INSERT INTO usage_logs (user_id, song_id, ts)
@@ -301,16 +245,17 @@ def process_spotify_json_file(filepath, user_id):
                 many=True,
                 commit=True
             )
+            logger.info("Usage logs inserted successfully.")
+        else:
+            logger.info("No new usage logs to insert from file.")
 
         os.remove(filepath)
-        print("File removed after successful processing.")
+        logger.info(f"File {filepath} removed after successful processing.")
 
     except Exception as e:
-        print("Error occurred during processing:")
+        logger.error(f"Error occurred during processing of {filepath}: {e}")
         traceback.print_exc()
         raise
-
-
 
 def get_range_bounds(now, range_type):
     if range_type == 'day':
