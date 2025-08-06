@@ -604,7 +604,7 @@ def fetch_recently_played_and_store(user_id):
                 song_id = song_row[0]
                 duration_ms = song_row[1]
             else:
-                metadata = get_track_metadata(track_uri)
+                metadata = get_or_create_song(track_uri)
                 if not metadata:
                     continue
 

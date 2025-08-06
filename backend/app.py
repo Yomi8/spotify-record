@@ -565,14 +565,14 @@ def get_top_songs():
         return jsonify({"error": "Invalid limit"}), 400
 
     # Build WHERE clause
-    filters = ["usage_logs.user_id = %s"]
+    filters = ["ul.user_id = %s"]
     params = [user_id]
 
     if start:
-        filters.append("usage_logs.ts >= %s")
+        filters.append("ul.ts >= %s")
         params.append(start)
     if end:
-        filters.append("usage_logs.ts <= %s")
+        filters.append("ul.ts <= %s")
         params.append(end)
 
     where_clause = " AND ".join(filters)
