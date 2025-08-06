@@ -70,25 +70,6 @@ def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=Fals
     finally:
         conn.close()
 
-def get_artist_metadata(artist_id):
-    try:
-        logger.info("Fetching artist metadata for artist ID: %s", artist_id)
-        artist = sp_app.artist(artist_id)
-        return {
-            "artist_id": artist["id"],
-            "artist_name": artist["name"],
-            "artist_uri": artist["uri"],
-            "artist_href": artist.get("href"),
-            "artist_external_urls": artist.get("external_urls"),
-            "artist_followers": artist.get("followers", {}).get("total"),
-            "artist_genres": artist.get("genres", []),
-            "artist_images": artist.get("images"),
-            "artist_popularity": artist.get("popularity"),
-        }
-    except Exception as e:
-        logger.error(f"Error fetching artist metadata for ID {artist_id}: {e}")
-        return None
-
 def get_or_create_artist(spotify_artist_id, spotify):
     # Check if artist already exists
     existing_artist = run_query(
@@ -138,6 +119,7 @@ def get_or_create_artist(spotify_artist_id, spotify):
     return new_artist['artist_id'] if new_artist else None
 
 def get_or_create_song(spotify_uri, spotify):
+    logger.info(f"Attempting to get or create song for URI: {spotify_uri}")
     # Check if song already exists
     existing_song = run_query(
         "SELECT song_id FROM core_songs WHERE spotify_uri = %s",
@@ -145,15 +127,23 @@ def get_or_create_song(spotify_uri, spotify):
         fetchone=True
     )
     if existing_song:
+        logger.info(f"Found existing song_id {existing_song['song_id']} for URI: {spotify_uri}")
         return existing_song['song_id']
 
-    # Fetch from Spotify
-    track = safe_spotify_call(lambda: spotify.track(spotify_uri))
+    try:
+        # Fetch from Spotify API wrapped in safe_spotify_call
+        track = safe_spotify_call(lambda: spotify.track(spotify_uri))
+    except Exception as e:
+        logger.error(f"Error fetching track for URI {spotify_uri}: {e}")
+        logger.debug(traceback.format_exc())
+        return None
+
     if not track:
+        logger.warning(f"No track data returned for URI: {spotify_uri}")
         return None
 
     artist_id = None
-    if track['artists']:
+    if track.get('artists'):
         artist_id = get_or_create_artist(track['artists'][0]['id'], spotify)
 
     album = track.get('album', {})
@@ -199,6 +189,7 @@ def get_or_create_song(spotify_uri, spotify):
         (spotify_uri,),
         fetchone=True
     )
+    logger.info(f"Created new song_id {new_song['song_id']} for URI: {spotify_uri}" if new_song else f"Failed to create song for URI: {spotify_uri}")
     return new_song['song_id'] if new_song else None
 
 def process_spotify_json_file(filepath, user_id):
