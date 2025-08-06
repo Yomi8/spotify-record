@@ -111,8 +111,7 @@ def get_or_create_artist(spotify_artist_id, spotify):
             artist_genres,
             artist_images,
             artist_popularity
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         artist['id'],
         artist['name'],
