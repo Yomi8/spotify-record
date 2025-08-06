@@ -21,7 +21,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import Spotify auth functions after logger setup
+import spotify_auth
 from spotify_auth import sp_app, safe_spotify_call, get_spotify_tokens, get_user_spotify_client, refresh_spotify_token
+
+spotify_auth.logger.info("Logging from spotify_auth after import in tasks.py")
 
 load_dotenv()
 
