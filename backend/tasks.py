@@ -269,12 +269,12 @@ def process_spotify_json_file(filepath, user_id):
             ))
 
         if insert_usage_logs:
-            combo_counter = Counter((row[0], row[2]) for row in usage_logs_data)  # (user_id, ts)
+            combo_counter = Counter((row[0], row[2]) for row in insert_usage_logs)  # (user_id, ts)
             duplicates = [k for k, v in combo_counter.items() if v > 1]
             if duplicates:
                 logger.warning(f"[DUPLICATES IN BATCH] Found {len(duplicates)} duplicate (user_id, ts) pairs: {duplicates}")
         
-            # ✅ Deduplicate batch by keeping only first instance of each (user_id, ts)
+            # Deduplicate batch by keeping only first instance of each (user_id, ts)
             seen = set()
             deduped_logs = []
             for row in insert_usage_logs:
