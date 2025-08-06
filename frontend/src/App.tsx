@@ -12,6 +12,7 @@ import Search from './pages/Search';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import SongDetails from './pages/SongDetails';
+import ArtistDetails from './pages/ArtistDetails';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/lists/:listType" element={<ListViewer />} />
         <Route path="/search" element={<Search />} />
         <Route path="/song/:songId" element={<SongDetails />} />
+        <Route path="/artist/:artistId" element={<ArtistDetails />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
       </Routes>

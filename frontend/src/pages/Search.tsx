@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import backgroundImg from '../assets/images/background.jpg';
+import { Link } from "react-router-dom";
 
 export default function Search() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
+  const [songResults, setSongResults] = useState<any[]>([]);
+  const [artistResults, setArtistResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -15,7 +17,8 @@ export default function Search() {
     setLoading(true);
     const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
     const data = await res.json();
-    setResults(data.results || []);
+    setSongResults(data.songs || []);
+    setArtistResults(data.artists || []);
     setLoading(false);
   };
 
@@ -107,29 +110,65 @@ export default function Search() {
             </div>
           )}
 
-          <div className="list-group">
-            {results.map(song => (
-              <div
-                key={song.song_id}
-                className="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex align-items-center"
-                onClick={() => navigate(`/song/${song.song_id}`)}
-                style={{ cursor: "pointer" }}
-              >
-                <img
-                  src={song.image_url}
-                  alt=""
-                  className="me-3"
-                  width={50}
-                  height={50}
-                  style={{ objectFit: "cover" }}
-                />
-                <div>
-                  <h6 className="mb-0">{song.track_name}</h6>
-                  <small className="text-light-50">{song.artist_name}</small>
-                </div>
+          {/* SONG RESULTS */}
+          {songResults.length > 0 && (
+            <>
+              <h4 className="mt-4 mb-3">Songs</h4>
+              <div className="list-group mb-4">
+                {songResults.map(song => (
+                  <div
+                    key={song.song_id}
+                    className="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex align-items-center"
+                    onClick={() => navigate(`/song/${song.song_id}`)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <img
+                      src={song.image_url}
+                      alt=""
+                      className="me-3"
+                      width={50}
+                      height={50}
+                      style={{ objectFit: "cover" }}
+                    />
+                    <div>
+                      <h6 className="mb-0">{song.track_name}</h6>
+                      <small className="text-light-50">{song.artist_name}</small>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
+
+          {/* ARTIST RESULTS */}
+          {artistResults.length > 0 && (
+            <>
+              <h4 className="mt-4 mb-3">Artists</h4>
+              <div className="list-group">
+                {artistResults.map(artist => (
+                  <div
+                    key={artist.artist_id}
+                    className="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex align-items-center"
+                    onClick={() => navigate(`/artist/${artist.artist_id}`)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <img
+                      src={artist.image_url}
+                      alt=""
+                      className="me-3"
+                      width={50}
+                      height={50}
+                      style={{ objectFit: "cover" }}
+                    />
+                    <div>
+                      <h6 className="mb-0">{artist.name}</h6>
+                      <small className="text-light-50">Artist</small>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -471,8 +471,8 @@ def search_songs_artists():
     if not query:
         return jsonify({"error": "Missing search query"}), 400
 
-    # Search both songs and artists (case-insensitive, partial match)
-    results = run_query("""
+    # Search songs matching track name or artist name
+    songs = run_query("""
         SELECT s.song_id, s.track_name, a.artist_name, s.image_url
         FROM core_songs s
         JOIN core_artists a ON s.artist_id = a.artist_id
@@ -480,7 +480,18 @@ def search_songs_artists():
         LIMIT 30
     """, (f"%{query}%", f"%{query}%"), dict_cursor=True)
 
-    return jsonify({"results": results}), 200
+    # Search artists matching artist name
+    artists = run_query("""
+        SELECT artist_id, artist_name, image_url
+        FROM core_artists
+        WHERE artist_name LIKE %s
+        LIMIT 30
+    """, (f"%{query}%",), dict_cursor=True)
+
+    return jsonify({
+        "songs": songs,
+        "artists": artists
+    }), 200
 
 @app.route('/api/song/<song_id>', methods=['GET'])
 def get_song_details(song_id):
@@ -547,6 +558,34 @@ def get_song_details(song_id):
     song["longest_binge"] = binge_stats["binge_count"] if binge_stats else 0
 
     return jsonify(song), 200
+
+@app.route('/api/artists/<int:artist_id>', methods=['GET'])
+@jwt_required()
+def get_artist_details(artist_id):
+    auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id)
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
+
+    query = """
+        SELECT 
+            a.artist_id,
+            a.name,
+            a.spotify_uri,
+            a.image_url,
+            COUNT(*) AS total_streams
+        FROM core_artists a
+        JOIN core_songs s ON a.artist_id = s.artist_id
+        JOIN usage_logs u ON s.song_id = u.song_id
+        WHERE u.user_id = %s AND a.artist_id = %s
+        GROUP BY a.artist_id
+    """
+    result = run_query(query, (user_id, artist_id))
+
+    if not result:
+        return jsonify({"error": "Artist not found"}), 404
+
+    return jsonify(result[0])
 
 @app.route('/api/lists/songs', methods=['GET'])
 @jwt_required()
