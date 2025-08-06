@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import logging
 import sys
 import traceback
+from collections import Counter
 
 # Configure logger
 logging.basicConfig(
@@ -268,7 +269,21 @@ def process_spotify_json_file(filepath, user_id):
             ))
 
         if insert_usage_logs:
-            logger.info(f"Inserting {len(insert_usage_logs)} usage logs...")
+            combo_counter = Counter((row[0], row[2]) for row in usage_logs_data)  # (user_id, ts)
+            duplicates = [k for k, v in combo_counter.items() if v > 1]
+            if duplicates:
+                logger.warning(f"[DUPLICATES IN BATCH] Found {len(duplicates)} duplicate (user_id, ts) pairs: {duplicates}")
+        
+            # ✅ Deduplicate batch by keeping only first instance of each (user_id, ts)
+            seen = set()
+            deduped_logs = []
+            for row in insert_usage_logs:
+                key = (row[0], row[2])  # (user_id, ts)
+                if key not in seen:
+                    seen.add(key)
+                    deduped_logs.append(row)
+
+            logger.info(f"Inserting {len(deduped_logs)} usage logs (deduped from {len(insert_usage_logs)} rows)...")
             run_query(
                 """
                 INSERT INTO usage_logs (
@@ -278,7 +293,7 @@ def process_spotify_json_file(filepath, user_id):
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
-                insert_usage_logs,
+                deduped_logs,
                 many=True,
                 commit=True
             )
