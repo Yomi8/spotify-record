@@ -216,70 +216,59 @@ def get_or_create_song(spotify_uri, spotify):
 
 def process_spotify_json_file(filepath, user_id):
     try:
-        logger.info(f"Starting processing for file: {filepath} and user_id: {user_id}")
-
         with open(filepath, "r", encoding="utf-8") as f:
             streams = json.load(f)
 
         insert_usage_logs = []
-        logger.info(f"Loaded {len(streams)} stream entries from file.")
 
-        for i, entry in enumerate(streams):
-            ts = entry.get("ts")
-            track_uri = entry.get("spotify_track_uri")
+        for entry in streams:
+            try:
+                ts = entry["ts"]
+                # Normalize timestamp to UTC string format
+                ts_dt = pendulum.parse(ts).in_timezone("UTC").to_datetime_string()
+            except Exception as ts_err:
+                logger.warning(f"[{filepath}] Failed to parse timestamp '{ts}': {ts_err}")
+                continue
 
-            logger.debug(f"[{i+1}/{len(streams)}] Checking for usage_log at ts={ts} for user={user_id}...")
+            logger.info(f"Checking for existing usage_log entry at {ts_dt} for user {user_id}...")
+
             exists = run_query(
                 "SELECT 1 FROM usage_logs WHERE user_id = %s AND ts = %s LIMIT 1",
-                (user_id, ts),
+                (user_id, ts_dt),
                 fetchone=True
             )
             if exists:
-                logger.debug(f"Usage log already exists at ts={ts}. Skipping.")
+                logger.info(f"Usage log for {ts_dt} already exists. Skipping.")
                 continue
 
+            track_uri = entry.get("spotify_track_uri")
             if not track_uri:
-                logger.warning(f"No spotify_track_uri found at ts={ts}. Skipping.")
+                logger.warning(f"No spotify_track_uri found for entry at {ts}. Skipping usage log entry.")
                 continue
 
-            logger.debug(f"Getting song_id for URI: {track_uri}")
+            logger.info(f"Processing track URI: {track_uri}")
             song_id = get_or_create_song(track_uri, sp_app)
             if not song_id:
-                logger.warning(f"Failed to get/create song for URI {track_uri}. Skipping entry.")
+                logger.warning(f"Failed to get or create song for URI {track_uri}. Skipping usage log entry.")
                 continue
 
-            try:
-                ts_dt = pendulum.parse(ts).to_datetime_string()
-            except Exception as ts_err:
-                logger.warning(f"Failed to parse timestamp '{ts}' — skipping entry. Error: {ts_err}")
-                continue
+            # Extract optional fields with defaults
+            ms_played = entry.get("ms_played", 0)
+            conn_country = entry.get("conn_country") or None
+            platform = entry.get("platform") or None
+            reason_start = entry.get("reason_start") or None
+            reason_end = entry.get("reason_end") or None
+            shuffle = entry.get("shuffle", False)
+            skipped = entry.get("skipped", False)
 
-            # Gather other fields (use .get to handle missing fields gracefully)
-            ms_played     = entry.get("ms_played", 0)
-            conn_country  = entry.get("conn_country")
-            platform      = entry.get("platform")
-            reason_start  = entry.get("reason_start")
-            reason_end    = entry.get("reason_end")
-            shuffle       = entry.get("shuffle")
-            skipped       = entry.get("skipped")
-
+            # Prepare row
             insert_usage_logs.append((
-                user_id,
-                song_id,
-                ts_dt,
-                ms_played,
-                conn_country,
-                platform,
-                reason_start,
-                reason_end,
-                shuffle,
-                skipped
+                user_id, song_id, ts_dt, ms_played, conn_country,
+                platform, reason_start, reason_end, shuffle, skipped
             ))
 
-            logger.debug(f"Queued usage log: ts={ts_dt}, song_id={song_id}, ms_played={ms_played}")
-
         if insert_usage_logs:
-            logger.info(f"Inserting {len(insert_usage_logs)} usage logs into database.")
+            logger.info(f"Inserting {len(insert_usage_logs)} usage logs...")
             run_query(
                 """
                 INSERT INTO usage_logs (
@@ -295,13 +284,13 @@ def process_spotify_json_file(filepath, user_id):
             )
             logger.info("Usage logs inserted successfully.")
         else:
-            logger.info("No new usage logs to insert.")
+            logger.info("No new usage logs to insert from file.")
 
         os.remove(filepath)
-        logger.info(f"Deleted file after processing: {filepath}")
+        logger.info(f"File {filepath} removed after successful processing.")
 
     except Exception as e:
-        logger.error(f"Unhandled error during processing of {filepath}: {e}")
+        logger.error(f"Error occurred during processing of {filepath}: {e}")
         traceback.print_exc()
         raise
 
