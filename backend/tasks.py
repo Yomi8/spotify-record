@@ -64,7 +64,12 @@ def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=Fals
                 if fetchone:
                     result = cursor.fetchone()
                 elif cursor.with_rows:
+                    # fetchall to consume all rows and avoid unread result
                     result = cursor.fetchall()
+                else:
+                    # No rows to fetch but ensure all results consumed
+                    while cursor.nextset():
+                        pass
             if commit and not return_lastrowid:
                 conn.commit()
         return result
