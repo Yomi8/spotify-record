@@ -57,16 +57,64 @@ def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=Fals
     finally:
         conn.close()
 
-def get_spotify_metadata(uri):
+def get_artist_metadata(artist_id):
+    try:
+        logger.info("Fetching artist metadata for artist ID: %s", artist_id)
+        artist = sp_app.artist(artist_id)
+        return {
+            "artist_id": artist["id"],
+            "artist_name": artist["name"],
+            "artist_uri": artist["uri"],
+            "artist_href": artist.get("href"),
+            "artist_external_urls": artist.get("external_urls"),
+            "artist_followers": artist.get("followers", {}).get("total"),
+            "artist_genres": artist.get("genres", []),
+            "artist_images": artist.get("images"),
+            "artist_popularity": artist.get("popularity"),
+        }
+    except Exception as e:
+        logger.error(f"Error fetching artist metadata for ID {artist_id}: {e}")
+        return None
+
+def get_or_create_artist(cursor, artist_uri):
+    # Check if artist exists by artist_uri
+    cursor.execute("SELECT artist_id FROM core_artists WHERE artist_uri = %s", (artist_uri,))
+    row = cursor.fetchone()
+    if row:
+        return row[0]
+    # Fetch from Spotify and insert
+    spotify_artist_id = artist_uri.split(":")[-1]
+    artist_data = get_artist_metadata(spotify_artist_id)
+    if not artist_data:
+        return None
+    cursor.execute("""
+        INSERT INTO core_artists (
+            artist_uri, artist_name, artist_href, artist_external_urls,
+            artist_followers, artist_genres, artist_images, artist_popularity
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        artist_data["artist_uri"],
+        artist_data["artist_name"],
+        artist_data["artist_href"],
+        json.dumps(artist_data["artist_external_urls"]),
+        artist_data["artist_followers"],
+        json.dumps(artist_data["artist_genres"]),
+        json.dumps(artist_data["artist_images"]),
+        artist_data["artist_popularity"],
+    ))
+    return cursor.lastrowid
+
+def get_track_metadata(uri):
     track_id = uri.split(":")[-1]
     try:
-        logger.info("Fetching metadata for track ID:", track_id)
+        logger.info("Fetching metadata for track ID: %s", track_id)
         track = sp_app.track(track_id)
         album = track["album"]
+        artist = track["artists"][0]
         return {
             "track_name": track["name"],
-            "artist_name": track["artists"][0]["name"],
-            "artist_id": track["artists"][0]["id"],
+            "artist_name": artist["name"],
+            "artist_uri": artist["uri"],
             "album_name": album["name"],
             "album_id": album["id"],
             "album_type": album.get("album_type"),
@@ -98,7 +146,6 @@ def process_spotify_json_file(file_path, user_id):
 
         total = len(data)
         for index, entry in enumerate(data):
-            # Progress logging (optional)
             logger.info(f"Processing entry {index + 1} of {total}, inserted so far: {inserted}")
 
             ts_str = entry.get("ts")
@@ -111,7 +158,6 @@ def process_spotify_json_file(file_path, user_id):
             except Exception:
                 continue
 
-            # Check for duplicate usage log
             cursor.execute(
                 "SELECT 1 FROM usage_logs WHERE user_id = %s AND ts = %s",
                 (user_id, ts)
@@ -125,23 +171,27 @@ def process_spotify_json_file(file_path, user_id):
             if song_row:
                 song_id = song_row[0]
             else:
-                metadata = get_spotify_metadata(track_uri)
+                metadata = get_track_metadata(track_uri)
                 if not metadata:
+                    continue
+
+                # Get or create artist and get artist_id (int)
+                artist_id = get_or_create_artist(cursor, metadata["artist_uri"])
+                if not artist_id:
                     continue
 
                 cursor.execute("""
                     INSERT INTO core_songs (
-                        spotify_uri, track_name, artist_name, artist_id,
+                        spotify_uri, track_name, artist_id,
                         album_name, album_id, album_type, album_uri,
                         release_date, release_date_precision,
                         duration_ms, is_explicit,
                         image_url, preview_url, popularity, is_local
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     track_uri,
                     metadata["track_name"],
-                    metadata["artist_name"],
-                    metadata["artist_id"],
+                    artist_id,
                     metadata["album_name"],
                     metadata["album_id"],
                     metadata["album_type"],
@@ -192,7 +242,6 @@ def process_spotify_json_file(file_path, user_id):
         return {"status": "COMPLETE", "inserted": inserted, "total": total}
 
     except Exception as e:
-        # Log error and re-raise for visibility
         logger.error(f"Error in process_spotify_json_file: {e}")
         raise
 
@@ -258,12 +307,15 @@ def get_snapshot_data(cursor, user_id, start, end):
     row = cursor.fetchone()
     top_song = row['song_id'] if row else None
 
+    # UPDATED: Join core_artists to get artist_name
     cursor.execute("""
-        SELECT cs.artist_name, SUM(ul.ms_played) AS total_artist_played
+        SELECT ca.artist_name, SUM(ul.ms_played) AS total_artist_played
         FROM usage_logs ul
         JOIN core_songs cs ON ul.song_id = cs.song_id
+        JOIN core_artists ca ON cs.artist_id = ca.artist_id
         WHERE ul.user_id = %s AND ul.ts BETWEEN %s AND %s
-        GROUP BY cs.artist_name ORDER BY total_artist_played DESC LIMIT 1
+        GROUP BY ca.artist_id, ca.artist_name
+        ORDER BY total_artist_played DESC LIMIT 1
     """, (user_id, start, end))
     row = cursor.fetchone()
     top_artist = row['artist_name'] if row else None
@@ -483,22 +535,27 @@ def fetch_recently_played_and_store(user_id):
                 song_id = song_row[0]
                 duration_ms = song_row[1]
             else:
-                metadata = get_spotify_metadata(track_uri)
+                metadata = get_track_metadata(track_uri)
                 if not metadata:
                     continue
+
+                # Get or create artist and get artist_id (int)
+                artist_id = get_or_create_artist(cursor, metadata["artist_uri"])
+                if not artist_id:
+                    continue
+
                 cursor.execute("""
                     INSERT INTO core_songs (
-                        spotify_uri, track_name, artist_name, artist_id,
+                        spotify_uri, track_name, artist_id,
                         album_name, album_id, album_type, album_uri,
                         release_date, release_date_precision,
                         duration_ms, is_explicit,
                         image_url, preview_url, popularity, is_local
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     track_uri,
                     metadata["track_name"],
-                    metadata["artist_name"],
-                    metadata["artist_id"],
+                    artist_id,
                     metadata["album_name"],
                     metadata["album_id"],
                     metadata["album_type"],

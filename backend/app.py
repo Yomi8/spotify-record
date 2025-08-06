@@ -291,7 +291,12 @@ def enrich_snapshot(snapshot):
     image_url = None
     if snapshot.get("most_played_song_id"):
         song_row = run_query(
-            "SELECT track_name, artist_name, image_url FROM core_songs WHERE song_id = %s",
+            """
+            SELECT s.track_name, a.artist_name, s.image_url
+            FROM core_songs s
+            JOIN core_artists a ON s.artist_id = a.artist_id
+            WHERE s.song_id = %s
+            """,
             (snapshot["most_played_song_id"],),
             fetchone=True,
             dict_cursor=True
@@ -311,7 +316,12 @@ def enrich_snapshot(snapshot):
     binge_image_url = None
     if snapshot.get("longest_binge_song_id"):
         binge_row = run_query(
-            "SELECT track_name, artist_name, image_url FROM core_songs WHERE song_id = %s",
+            """
+            SELECT s.track_name, a.artist_name, s.image_url
+            FROM core_songs s
+            JOIN core_artists a ON s.artist_id = a.artist_id
+            WHERE s.song_id = %s
+            """,
             (snapshot["longest_binge_song_id"],),
             fetchone=True,
             dict_cursor=True
@@ -461,9 +471,10 @@ def search_songs_artists():
 
     # Search both songs and artists (case-insensitive, partial match)
     results = run_query("""
-        SELECT song_id, track_name, artist_name, image_url
-        FROM core_songs
-        WHERE track_name LIKE %s OR artist_name LIKE %s
+        SELECT s.song_id, s.track_name, a.artist_name, s.image_url
+        FROM core_songs s
+        JOIN core_artists a ON s.artist_id = a.artist_id
+        WHERE s.track_name LIKE %s OR a.artist_name LIKE %s
         LIMIT 30
     """, (f"%{query}%", f"%{query}%"), dict_cursor=True)
 
@@ -474,26 +485,27 @@ def get_song_details(song_id):
     # Get song info with extended details
     song = run_query("""
         SELECT 
-            song_id,
-            spotify_uri,
-            track_name,
-            artist_name,
-            artist_id,
-            album_name,
-            album_id,
-            album_type,
-            album_uri,
-            release_date,
-            release_date_precision,
-            duration_ms,
-            is_explicit,
-            image_url,
-            preview_url,
-            popularity,
-            is_local,
-            created_at
-        FROM core_songs
-        WHERE song_id = %s
+            s.song_id,
+            s.spotify_uri,
+            s.track_name,
+            a.artist_name,
+            a.artist_id,
+            s.album_name,
+            s.album_id,
+            s.album_type,
+            s.album_uri,
+            s.release_date,
+            s.release_date_precision,
+            s.duration_ms,
+            s.is_explicit,
+            s.image_url,
+            s.preview_url,
+            s.popularity,
+            s.is_local,
+            s.created_at
+        FROM core_songs s
+        JOIN core_artists a ON s.artist_id = a.artist_id
+        WHERE s.song_id = %s
     """, (song_id,), fetchone=True, dict_cursor=True)
 
     if not song:
@@ -523,7 +535,7 @@ def get_song_details(song_id):
                 ORDER BY ts
             ) t
             WHERE TIMESTAMPDIFF(MINUTE, prev_ts, ts) <= 30
-            GROUP BY DATE_FORMAT(ts, '%Y-%m-%d %H:%i')
+            GROUP BY DATE_FORMAT(ts, '%%Y-%%m-%%d %%H:%%i')
         ) b
         ORDER BY binge_count DESC
         LIMIT 1
@@ -565,15 +577,16 @@ def get_top_songs():
 
     query = f"""
         SELECT
-            core_songs.song_id,
-            core_songs.track_name,
-            core_songs.artist_name,
-            core_songs.image_url,
-            COUNT(usage_logs.usage_id) AS play_count
-        FROM usage_logs
-        JOIN core_songs ON usage_logs.song_id = core_songs.song_id
+            s.song_id,
+            s.track_name,
+            a.artist_name,
+            s.image_url,
+            COUNT(ul.usage_id) AS play_count
+        FROM usage_logs ul
+        JOIN core_songs s ON ul.song_id = s.song_id
+        JOIN core_artists a ON s.artist_id = a.artist_id
         WHERE {where_clause}
-        GROUP BY core_songs.song_id, core_songs.track_name, core_songs.artist_name, core_songs.image_url
+        GROUP BY s.song_id, s.track_name, a.artist_name, s.image_url
         ORDER BY play_count DESC
         LIMIT {limit}
     """
@@ -598,27 +611,29 @@ def get_top_artists():
         return jsonify({"error": "Invalid limit"}), 400
 
     # Build WHERE clause
-    filters = ["usage_logs.user_id = %s"]
+    filters = ["ul.user_id = %s"]
     params = [user_id]
 
     if start:
-        filters.append("usage_logs.ts >= %s")
+        filters.append("ul.ts >= %s")
         params.append(start)
     if end:
-        filters.append("usage_logs.ts <= %s")
+        filters.append("ul.ts <= %s")
         params.append(end)
 
     where_clause = " AND ".join(filters)
 
     query = f"""
         SELECT
-            core_songs.artist_name,
-            MAX(core_songs.image_url) AS image_url,
-            COUNT(usage_logs.usage_id) AS play_count
-        FROM usage_logs
-        JOIN core_songs ON usage_logs.song_id = core_songs.song_id
+            a.artist_id,
+            a.artist_name,
+            MAX(s.image_url) AS image_url,
+            COUNT(ul.usage_id) AS play_count
+        FROM usage_logs ul
+        JOIN core_songs s ON ul.song_id = s.song_id
+        JOIN core_artists a ON s.artist_id = a.artist_id
         WHERE {where_clause}
-        GROUP BY core_songs.artist_name
+        GROUP BY a.artist_id, a.artist_name
         ORDER BY play_count DESC
         LIMIT {limit}
     """
