@@ -15,7 +15,7 @@ export default function SongDetails() {
   if (song.error) return <p>{song.error}</p>;
 
   return (
-    <div style={{topMargin: '65px'}}>
+    <div style={{marginTop: '65px'}}>
       <h2>{song.track_name} — {song.artist_name}</h2>
       <img src={song.image_url} alt="" width={120} />
       <ul>
