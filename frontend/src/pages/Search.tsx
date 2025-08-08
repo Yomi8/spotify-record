@@ -160,8 +160,7 @@ export default function Search() {
                       style={{ objectFit: "cover" }}
                     />
                     <div>
-                      <h6 className="mb-0">{artist.name}</h6>
-                      <small className="text-light-50">Artist</small>
+                      <h6 className="mb-0">{artist.artist_name}</h6>
                     </div>
                   </div>
                 ))}
