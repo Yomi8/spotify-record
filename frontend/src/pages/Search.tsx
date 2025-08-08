@@ -109,6 +109,35 @@ export default function Search() {
             </div>
           )}
 
+          {/* ARTIST RESULTS */}
+          {artistResults.length > 0 && (
+            <>
+              <h4 className="mt-4 mb-3">Artists</h4>
+              <div className="list-group">
+                {artistResults.map(artist => (
+                  <div
+                    key={artist.artist_id}
+                    className="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex align-items-center"
+                    onClick={() => navigate(`/artist/${artist.artist_id}`)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <img
+                      src={artist.image_url}
+                      alt=""
+                      className="me-3"
+                      width={50}
+                      height={50}
+                      style={{ objectFit: "cover" }}
+                    />
+                    <div>
+                      <h6 className="mb-0">{artist.artist_name}</h6>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
           {/* SONG RESULTS */}
           {songResults.length > 0 && (
             <>
@@ -132,35 +161,6 @@ export default function Search() {
                     <div>
                       <h6 className="mb-0">{song.track_name}</h6>
                       <small className="text-light-50">{song.artist_name}</small>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* ARTIST RESULTS */}
-          {artistResults.length > 0 && (
-            <>
-              <h4 className="mt-4 mb-3">Artists</h4>
-              <div className="list-group">
-                {artistResults.map(artist => (
-                  <div
-                    key={artist.artist_id}
-                    className="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex align-items-center"
-                    onClick={() => navigate(`/artist/${artist.artist_id}`)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <img
-                      src={artist.image_url}
-                      alt=""
-                      className="me-3"
-                      width={50}
-                      height={50}
-                      style={{ objectFit: "cover" }}
-                    />
-                    <div>
-                      <h6 className="mb-0">{artist.artist_name}</h6>
                     </div>
                   </div>
                 ))}
