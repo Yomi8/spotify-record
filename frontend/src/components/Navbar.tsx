@@ -41,10 +41,11 @@ export default function Navbar() {
     >
       <div className="d-flex align-items-center gap-4">
         <div>
-          <span className="navbar-brand mb-0 h1">Logo</span>
-          <Link to="/" className="text-white">Record</Link>
+          <Link to="/" className="text-white"><span className="navbar-brand mb-0 h1"><i className="bi bi-music-player-fill"></i> Logo</span> Record</Link>
         </div>
-        <Link to="/lists" className="nav-link text-white">Lists</Link>
+        <Link to="/lists" className="nav-link text-white">
+          <i className="bi bi-list-ol"></i> Lists
+        </Link>
         <Link to="/search" className="nav-link text-white">
           <i className="bi bi-search"></i> Search
         </Link>
