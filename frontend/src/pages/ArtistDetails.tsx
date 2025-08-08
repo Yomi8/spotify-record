@@ -125,8 +125,18 @@ export default function ArtistDetails() {
                 <div className="card-body text-light">
                   <p><strong>Total Streams:</strong> {artist.total_streams.toLocaleString()}</p>
                   <p><strong>Songs Played:</strong> {artist.song_count}</p>
-                  <p><strong>First Played:</strong> {new Date(artist.first_played).toLocaleDateString()}</p>
-                  <p><strong>Last Played:</strong> {new Date(artist.last_played).toLocaleDateString()}</p>
+                  <p>
+                    <strong>First Played:</strong>{" "}
+                    {artist.first_played
+                      ? new Date(artist.first_played).toLocaleDateString()
+                      : "No Date Found"}
+                  </p>
+                  <p>
+                    <strong>Last Played:</strong>{" "}
+                    {artist.last_played
+                      ? new Date(artist.last_played).toLocaleDateString()
+                      : "No Date Found"}
+                  </p>
                 </div>
               </div>
             </div>
