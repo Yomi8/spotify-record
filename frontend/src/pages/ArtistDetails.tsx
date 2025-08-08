@@ -41,8 +41,15 @@ export default function ArtistDetails() {
     fetch(`/api/artist/${artistId}/songs`)
       .then((res) => res.json())
       .then((data) => {
-        if ('error' in data) setError(data.error);
-        else setSongs(data);
+        if ('error' in data) {
+          setError(data.error);
+        } else if (Array.isArray(data)) {
+          setSongs(data);
+        } else if (Array.isArray(data.songs)) {
+          setSongs(data.songs);
+        } else {
+          setError("Unexpected data format from songs API");
+        }
       })
       .catch((err) => setError(err.message));
   }, [artistId]);
@@ -122,7 +129,6 @@ export default function ArtistDetails() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
