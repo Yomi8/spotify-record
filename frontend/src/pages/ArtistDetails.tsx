@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import backgroundImg from '../assets/images/background.jpg';
-import { useAuth0 } from "@auth0/auth0-react";  // or your JWT auth hook
+import { useAuth0 } from "@auth0/auth0-react";
 
 interface ArtistDetailsType {
   artist_id: number;
@@ -25,10 +25,6 @@ interface ArtistSong {
   first_played?: string;
   last_played?: string;
 }
-
-import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { useAuth0 } from "@auth0/auth0-react";
 
 export default function ArtistDetails() {
   const { artistId } = useParams();
