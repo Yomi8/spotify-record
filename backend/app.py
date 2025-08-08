@@ -690,5 +690,36 @@ def get_top_artists():
     artists = run_query(query, tuple(params), dict_cursor=True)
     return jsonify({"artists": artists}), 200
 
+@app.route('/api/artist/<int:artist_id>/songs', methods=['GET'])
+@jwt_required()
+def get_top_songs_by_artist(artist_id):
+    auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id)
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
+
+    try:
+        limit = int(request.args.get("limit", 100))
+    except ValueError:
+        return jsonify({"error": "Invalid limit"}), 400
+
+    query = """
+        SELECT
+            s.song_id,
+            s.track_name,
+            s.image_url,
+            COUNT(ul.usage_id) AS play_count
+        FROM usage_logs ul
+        JOIN core_songs s ON ul.song_id = s.song_id
+        WHERE ul.user_id = %s AND s.artist_id = %s
+        GROUP BY s.song_id, s.track_name, s.image_url
+        ORDER BY play_count DESC
+        LIMIT %s
+    """
+
+    songs = run_query(query, (user_id, artist_id, limit), dict_cursor=True)
+    return jsonify({"songs": songs}), 200
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
