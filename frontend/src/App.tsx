@@ -11,7 +11,6 @@ import Lists from "./pages/Lists";
 import ListViewer from "./pages/ListViewer";
 import Search from './pages/Search';
 import Settings from './pages/Settings';
-import Profile from './pages/Profile';
 import SongDetails from './pages/SongDetails';
 import ArtistDetails from './pages/ArtistDetails';
 
@@ -29,7 +28,6 @@ function App() {
           <Route path="/song/:songId" element={<SongDetails />} />
           <Route path="/artist/:artistId" element={<ArtistDetails />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/profile" element={<Profile />} />
         </Routes>
       </div>
       <Footer />
