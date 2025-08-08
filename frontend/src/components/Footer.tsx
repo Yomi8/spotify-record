@@ -15,17 +15,13 @@ export default function Footer() {
       }}
     >
       <div className="d-flex align-items-center gap-4">
-        <Link to="/" className="nav-link text-white">
-          <i className="bi bi-house-fill"></i> Home
+        <Link to="/acknoledgements" className="nav-link text-white">
+          <i className="bi bi-paperclip"></i> Acknowledgements
         </Link>
-        <Link to="/lists" className="nav-link text-white">
-          <i className="bi bi-list-ol"></i> Lists
-        </Link>
-        <Link to="/search" className="nav-link text-white">
-          <i className="bi bi-search"></i> Search
+        <Link to="/help" className="nav-link text-white">
+          <i className="bi bi-patch-question"></i> Help
         </Link>
       </div>
-
       <div className="text-white small">
         © {new Date().getFullYear()} Record
       </div>
