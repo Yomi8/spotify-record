@@ -71,20 +71,6 @@ export default function Home() {
           zIndex: 0,
         }}
       />
-      {/* Gradient overlay */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'linear-gradient(to right, #000 60%, #333 100%)',
-          opacity: 0.85,
-          zIndex: 1,
-          pointerEvents: 'none',
-        }}
-      />
 
       {/* Main content */}
       <div style={{position: 'relative', zIndex: 2 }}>
