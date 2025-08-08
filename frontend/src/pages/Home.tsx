@@ -87,7 +87,7 @@ export default function Home() {
       />
 
       {/* Main content */}
-      <div style={{marginTop: '65px', position: 'relative', zIndex: 2 }}>
+      <div style={{position: 'relative', zIndex: 2 }}>
         <h1>
           Welcome{' '}
           <span>

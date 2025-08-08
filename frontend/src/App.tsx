@@ -20,16 +20,18 @@ function App() {
     <Router>
       <Navbar />
       <UserSync />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/lists" element={<Lists />} />
-        <Route path="/lists/:listType" element={<ListViewer />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/song/:songId" element={<SongDetails />} />
-        <Route path="/artist/:artistId" element={<ArtistDetails />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/profile" element={<Profile />} />
-      </Routes>
+      <div style={{ paddingTop: '65px', paddingBottom: '50px' }}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/lists" element={<Lists />} />
+          <Route path="/lists/:listType" element={<ListViewer />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/song/:songId" element={<SongDetails />} />
+          <Route path="/artist/:artistId" element={<ArtistDetails />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/profile" element={<Profile />} />
+        </Routes>
+      </div>
       <Footer />
     </Router>
   );

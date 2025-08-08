@@ -181,7 +181,7 @@ export default function ListViewer() {
           zIndex: 1,
           width: "fit-content",
           minWidth: "300px",
-          margin: "65px auto 0 auto",
+          margin: "auto auto 0 auto",
           padding: "2rem",
         }}
       >

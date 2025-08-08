@@ -96,7 +96,7 @@ export default function ArtistDetails() {
   if (!artist) return <p>Loading...</p>;
 
   return (
-    <div className="container-fluid text-white py-4" style={{ marginTop: '65px', minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+    <div className="container-fluid text-white py-4" style={{minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
       <img src={backgroundImg} alt="Background" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', objectFit: 'cover', zIndex: 0 }} />
 
       <div className="container" style={{ position: 'relative', zIndex: 2, maxWidth: '1100px' }}>
