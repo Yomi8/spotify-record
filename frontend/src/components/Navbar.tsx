@@ -41,7 +41,7 @@ export default function Navbar() {
     >
       <div className="d-flex align-items-center gap-4">
         <div>
-          <Link to="/" className="text-white"><span className="navbar-brand mb-0 h1"><i className="bi bi-music-player-fill"></i> Logo</span> Record</Link>
+          <Link to="/" className="text-white navbar-brand mb-0 h1"><i className="bi bi-music-player-fill"></i> Record</Link>
         </div>
         <Link to="/lists" className="nav-link text-white">
           <i className="bi bi-list-ol"></i> Lists
