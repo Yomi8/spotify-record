@@ -708,7 +708,9 @@ def get_top_songs_by_artist(artist_id):
             s.song_id,
             s.track_name,
             s.image_url,
-            COUNT(ul.usage_id) AS play_count
+            COUNT(ul.usage_id) AS play_count,
+            MIN(ul.ts) AS first_played,
+            MAX(ul.ts) AS last_played
         FROM usage_logs ul
         JOIN core_songs s ON ul.song_id = s.song_id
         WHERE ul.user_id = %s AND s.artist_id = %s
@@ -718,8 +720,14 @@ def get_top_songs_by_artist(artist_id):
     """
 
     songs = run_query(query, (user_id, artist_id, limit), dict_cursor=True)
-    return jsonify({"songs": songs}), 200
 
+    for song in songs:
+        if song['first_played']:
+            song['first_played'] = pendulum.instance(song['first_played']).to_iso8601_string()
+        if song['last_played']:
+            song['last_played'] = pendulum.instance(song['last_played']).to_iso8601_string()
+
+    return jsonify({"songs": songs}), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

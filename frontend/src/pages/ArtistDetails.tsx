@@ -22,6 +22,8 @@ interface ArtistSong {
   track_name: string;
   play_count: number;
   image_url: string;
+  first_played?: string;
+  last_played?: string;
 }
 
 export default function ArtistDetails() {
