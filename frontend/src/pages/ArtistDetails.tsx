@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import backgroundImg from '../assets/images/background.jpg';
+import { useAuth0 } from "@auth0/auth0-react";  // or your JWT auth hook
 
 interface ArtistDetailsType {
   artist_id: number;
@@ -25,34 +26,52 @@ interface ArtistSong {
 
 export default function ArtistDetails() {
   const { artistId } = useParams();
+  const { getAccessTokenSilently, isAuthenticated } = useAuth0();
   const [artist, setArtist] = useState<ArtistDetailsType | null>(null);
   const [songs, setSongs] = useState<ArtistSong[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/artist/${artistId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if ('error' in data) setError(data.error);
-        else setArtist(data);
-      })
-      .catch((err) => setError(err.message));
+    if (!isAuthenticated) return; // only fetch if logged in
 
-    fetch(`/api/artist/${artistId}/songs`)
-      .then((res) => res.json())
-      .then((data) => {
-        if ('error' in data) {
-          setError(data.error);
-        } else if (Array.isArray(data)) {
-          setSongs(data);
-        } else if (Array.isArray(data.songs)) {
-          setSongs(data.songs);
+    const fetchData = async () => {
+      try {
+        const token = await getAccessTokenSilently();
+
+        const artistRes = await fetch(`/api/artist/${artistId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const artistData = await artistRes.json();
+        if ('error' in artistData) {
+          setError(artistData.error);
         } else {
-          setError("Unexpected data format from songs API");
+          setArtist(artistData);
         }
-      })
-      .catch((err) => setError(err.message));
-  }, [artistId]);
+
+        const songsRes = await fetch(`/api/artist/${artistId}/songs`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const songsData = await songsRes.json();
+        if ('error' in songsData) {
+          setError(songsData.error);
+        } else if (Array.isArray(songsData)) {
+          setSongs(songsData);
+        } else if (Array.isArray(songsData.songs)) {
+          setSongs(songsData.songs);
+        } else {
+          setError("Unexpected format from songs API");
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch artist data");
+      }
+    };
+
+    fetchData();
+  }, [artistId, isAuthenticated, getAccessTokenSilently]);
 
   if (error) return <p className="text-danger">Error: {error}</p>;
   if (!artist) return <p>Loading...</p>;
