@@ -131,9 +131,9 @@ const JSONUpload = () => {
 
   return (
     <div className="text-white">
-      <h3 className="mb-3">
-        <i className="bi bi-upload me-2"></i> Upload your Spotify JSON file
-      </h3>
+      <h4 className="mb-3">
+        Upload Spotify JSON Data from Your Extended Listening History
+      </h4>
 
       <input
         type="file"
