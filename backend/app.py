@@ -691,11 +691,10 @@ def get_top_artists():
     return jsonify({"artists": artists}), 200
 
 @app.route('/api/artist/<int:artist_id>/songs', methods=['GET'])
-# @jwt_required()
+@jwt_required()
 def get_top_songs_by_artist(artist_id):
-    # auth0_id = get_jwt_identity()
-    # user_id = get_user_id_from_auth0(auth0_id)
-    user_id = 1
+    auth0_id = get_jwt_identity()
+    user_id = get_user_id_from_auth0(auth0_id)
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
