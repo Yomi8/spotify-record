@@ -40,7 +40,6 @@ export default function ArtistDetails() {
       try {
         const token = await getAccessTokenSilently();
 
-        // Fetch artist info
         const artistRes = await fetch(`/api/artist/${artistId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -52,7 +51,6 @@ export default function ArtistDetails() {
           return;
         }
 
-        // Fetch artist's songs
         const songsRes = await fetch(`/api/artist/${artistId}/songs`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -73,13 +71,13 @@ export default function ArtistDetails() {
 
         setSongs(songList);
 
-        // Compute first_played and last_played from song data
+        // Determine earliest and latest play timestamps
         const timestamps = songList.flatMap((song) =>
           [song.first_played, song.last_played].filter(Boolean)
         );
         const dates = timestamps.map((ts) => new Date(ts!));
-        const firstPlayed = dates.length > 0 ? new Date(Math.min(...dates)) : null;
-        const lastPlayed = dates.length > 0 ? new Date(Math.max(...dates)) : null;
+        const firstPlayed = dates.length > 0 ? new Date(Math.min(...dates.map(d => d.getTime()))) : null;
+        const lastPlayed = dates.length > 0 ? new Date(Math.max(...dates.map(d => d.getTime()))) : null;
 
         setArtist({
           ...artistData,
@@ -108,7 +106,7 @@ export default function ArtistDetails() {
               <div style={{ width: '300px', height: '300px', maxWidth: '100%', position: 'relative' }}>
                 <img
                   src={artist.image_url}
-                  alt={`${artist.name}`}
+                  alt={artist.name}
                   className="img-fluid rounded shadow"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute' }}
                 />
@@ -131,7 +129,14 @@ export default function ArtistDetails() {
                   {artist.genres && artist.genres.length > 0 && (
                     <p><strong>Genres:</strong> {artist.genres.join(', ')}</p>
                   )}
-                  <a href={`https://open.spotify.com/artist/${artist.spotify_uri.split(':')[2]}`} target="_blank" rel="noreferrer" className="btn btn-success mt-2">Open in Spotify</a>
+                  <a
+                    href={`https://open.spotify.com/artist/${artist.spotify_uri.split(':')[2]}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-success mt-2"
+                  >
+                    Open in Spotify
+                  </a>
                 </div>
               </div>
             </div>
@@ -147,13 +152,21 @@ export default function ArtistDetails() {
                   <p>
                     <strong>First Played:</strong>{" "}
                     {artist.first_played
-                      ? new Date(artist.first_played).toLocaleDateString()
+                      ? new Date(artist.first_played).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
                       : "No Date Found"}
                   </p>
                   <p>
                     <strong>Last Played:</strong>{" "}
                     {artist.last_played
-                      ? new Date(artist.last_played).toLocaleDateString()
+                      ? new Date(artist.last_played).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
                       : "No Date Found"}
                   </p>
                 </div>
@@ -173,12 +186,15 @@ export default function ArtistDetails() {
                         <span className="badge bg-success">{song.play_count}</span>
                       </li>
                     ))}
-                    {songs.length === 0 && <li className="list-group-item bg-dark text-light">No songs found.</li>}
+                    {songs.length === 0 && (
+                      <li className="list-group-item bg-dark text-light">No songs found.</li>
+                    )}
                   </ul>
                 </div>
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
