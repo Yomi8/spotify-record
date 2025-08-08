@@ -26,6 +26,10 @@ interface ArtistSong {
   last_played?: string;
 }
 
+import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
+
 export default function ArtistDetails() {
   const { artistId } = useParams();
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
@@ -34,39 +38,58 @@ export default function ArtistDetails() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) return; // only fetch if logged in
+    if (!isAuthenticated) return;
 
     const fetchData = async () => {
       try {
         const token = await getAccessTokenSilently();
 
+        // Fetch artist info
         const artistRes = await fetch(`/api/artist/${artistId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
         const artistData = await artistRes.json();
-        if ('error' in artistData) {
+        if ("error" in artistData) {
           setError(artistData.error);
-        } else {
-          setArtist(artistData);
+          return;
         }
 
+        // Fetch artist's songs
         const songsRes = await fetch(`/api/artist/${artistId}/songs`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
         const songsData = await songsRes.json();
-        if ('error' in songsData) {
-          setError(songsData.error);
-        } else if (Array.isArray(songsData)) {
-          setSongs(songsData);
+
+        let songList: ArtistSong[] = [];
+
+        if (Array.isArray(songsData)) {
+          songList = songsData;
         } else if (Array.isArray(songsData.songs)) {
-          setSongs(songsData.songs);
+          songList = songsData.songs;
         } else {
           setError("Unexpected format from songs API");
+          return;
         }
+
+        setSongs(songList);
+
+        // Compute first_played and last_played from song data
+        const timestamps = songList.flatMap((song) =>
+          [song.first_played, song.last_played].filter(Boolean)
+        );
+        const dates = timestamps.map((ts) => new Date(ts!));
+        const firstPlayed = dates.length > 0 ? new Date(Math.min(...dates)) : null;
+        const lastPlayed = dates.length > 0 ? new Date(Math.max(...dates)) : null;
+
+        setArtist({
+          ...artistData,
+          first_played: firstPlayed?.toISOString() ?? "",
+          last_played: lastPlayed?.toISOString() ?? "",
+        });
       } catch (err: any) {
         setError(err.message || "Failed to fetch artist data");
       }
