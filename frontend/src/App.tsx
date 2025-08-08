@@ -29,6 +29,7 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
       </Routes>
+      <Footer />
     </Router>
   );
 }
