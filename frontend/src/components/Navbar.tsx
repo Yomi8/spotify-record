@@ -67,9 +67,8 @@ export default function Navbar() {
           {isAuthenticated ? (
             <>
               <li>{user && <span className="dropdown-item-text">{user.name}</span>}</li>
-              <li><Link className="dropdown-item" to="/profile">Profile</Link></li>
-              <li><Link className="dropdown-item" to="/settings">Settings</Link></li>
 
+              <li><hr className="dropdown-divider" /></li>
               <li>
                 <button className="dropdown-item" onClick={handleConnectSpotify}>
                   Connect to Spotify
@@ -82,6 +81,7 @@ export default function Navbar() {
               </li>
 
               <li><hr className="dropdown-divider" /></li>
+              <li><Link className="dropdown-item" to="/settings">Settings</Link></li>
               <li>
                 <button className="dropdown-item" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
                   Logout
