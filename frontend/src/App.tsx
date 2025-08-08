@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Navbar from './components/Navbar';
 import UserSync from './components/UserSync';
+import Footer from './components/Footer';
 
 import Home from './pages/Home';
 import Lists from "./pages/Lists";
