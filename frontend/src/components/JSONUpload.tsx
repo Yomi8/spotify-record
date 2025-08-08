@@ -7,6 +7,7 @@ const JSONUpload = () => {
   const [jobId, setJobId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
@@ -16,6 +17,9 @@ const JSONUpload = () => {
 
   const handleUpload = async () => {
     if (!file) return;
+    setIsUploading(true);
+    setStatus("Uploading...");
+    setResult(null);
 
     try {
       const token = await getAccessTokenSilently();
@@ -36,13 +40,14 @@ const JSONUpload = () => {
       if (res.status === 202 && json.job_id) {
         setJobId(json.job_id);
         setStatus("Processing...");
-        setResult(null);
       } else {
         setStatus(`Error: ${json.error || "Unknown error"}`);
+        setIsUploading(false);
       }
     } catch (err) {
       setStatus(`Upload failed: ${(err as Error).message}`);
       console.error(err);
+      setIsUploading(false);
     }
   };
 
@@ -60,15 +65,18 @@ const JSONUpload = () => {
         if (jobStatus === "finished") {
           clearInterval(interval);
           setResult(data.result);
+          setIsUploading(false);
         } else if (jobStatus === "failed") {
           clearInterval(interval);
           setResult({ error: data.error || "Job failed" });
+          setIsUploading(false);
         }
       } catch (err) {
         console.error("Polling error:", err);
         clearInterval(interval);
         setStatus("Polling error");
         setResult({ error: (err as Error).message });
+        setIsUploading(false);
       }
     }, 3000);
 
@@ -98,7 +106,11 @@ const JSONUpload = () => {
             <tbody>
               <tr>
                 <th scope="row">Status</th>
-                <td className={result.status === "COMPLETE" ? "text-success" : "text-warning"}>
+                <td
+                  className={
+                    result.status === "COMPLETE" ? "text-success" : "text-warning"
+                  }
+                >
                   {result.status}
                 </td>
               </tr>
@@ -118,22 +130,32 @@ const JSONUpload = () => {
   };
 
   return (
-    <div className="text-white p-4">
-      <h3 className="text-xl mb-3">Upload your Spotify JSON file</h3>
+    <div className="text-white">
+      <h3 className="mb-3">
+        <i className="bi bi-upload me-2"></i> Upload your Spotify JSON file
+      </h3>
 
       <input
         type="file"
         accept=".json"
         onChange={handleChange}
-        className="form-control mb-2"
+        className="form-control mb-3"
+        disabled={isUploading}
       />
 
       <button
         onClick={handleUpload}
-        className="btn btn-success"
-        disabled={!file}
+        className="btn btn-success d-flex align-items-center"
+        disabled={!file || isUploading}
       >
-        Upload
+        {isUploading && (
+          <span
+            className="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          ></span>
+        )}
+        {isUploading ? "Processing..." : "Upload"}
       </button>
 
       {status && (
@@ -145,7 +167,7 @@ const JSONUpload = () => {
                 ? "text-success"
                 : status === "failed"
                 ? "text-danger"
-                : status === "Processing..."
+                : status === "Processing..." || status === "Uploading..."
                 ? "text-warning"
                 : "text-info"
             }
