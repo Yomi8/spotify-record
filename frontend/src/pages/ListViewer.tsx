@@ -21,13 +21,13 @@ type Artist = {
 
 export default function ListViewer() {
   const { listType } = useParams();
-  const { getAccessTokenSilently, isAuthenticated } = useAuth0();
+  const { getAccessTokenSilently, isAuthenticated, isLoading: authLoading } = useAuth0();
 
   const [songs, setSongs] = useState<Song[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Custom list form state
+  // Custom list state
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [customLimit, setCustomLimit] = useState(10);
@@ -48,7 +48,6 @@ export default function ListViewer() {
   const limit = currentOption?.limit ?? 100;
   const listLabel = currentOption?.label ?? "List not found";
 
-  // Predefined date filters
   let start: string | undefined;
   let end: string | undefined;
   if (listType === "top-10-this-year") {
@@ -57,37 +56,41 @@ export default function ListViewer() {
   }
 
   useEffect(() => {
+    if (!isAuthenticated || listType === "custom") return; // skip for custom
     const fetchData = async () => {
-      if (!isAuthenticated || (!isSongList && !isArtistList)) return;
+      console.log("Fetching prebuilt list:", listType);
       setLoading(true);
       try {
-        const accessToken = await getAccessTokenSilently();
+        const token = await getAccessTokenSilently();
         const endpoint = isSongList ? "/api/lists/songs" : "/api/lists/artists";
         const res = await axios.get(endpoint, {
           params: { start, end, limit },
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         });
         if (isSongList) setSongs(res.data.songs);
         else setArtists(res.data.artists);
-      } catch {
+      } catch (err) {
+        console.error("Error fetching prebuilt list", err);
         setSongs([]);
         setArtists([]);
       } finally {
         setLoading(false);
       }
     };
-
-    if (listType !== "custom") {
-      fetchData();
-    }
+    fetchData();
   }, [listType, isAuthenticated]);
 
   const fetchCustomList = async () => {
-    if (!isAuthenticated) return;
+    console.log("Custom list button clicked");
+    if (!isAuthenticated) {
+      console.warn("Not authenticated, cannot fetch");
+      return;
+    }
     setLoading(true);
     try {
-      const accessToken = await getAccessTokenSilently();
+      const token = await getAccessTokenSilently();
+      console.log("Got token, fetching custom list:", customType, customStart, customEnd, customLimit);
       const endpoint = customType === "songs" ? "/api/lists/songs" : "/api/lists/artists";
       const res = await axios.get(endpoint, {
         params: {
@@ -95,7 +98,7 @@ export default function ListViewer() {
           end: customEnd || undefined,
           limit: customLimit || undefined,
         },
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
       });
       if (customType === "songs") {
@@ -105,7 +108,8 @@ export default function ListViewer() {
         setArtists(res.data.artists);
         setSongs([]);
       }
-    } catch {
+    } catch (err) {
+      console.error("Error fetching custom list", err);
       setSongs([]);
       setArtists([]);
     } finally {
@@ -159,7 +163,6 @@ export default function ListViewer() {
 
   const renderContent = () => {
     if (loading) return <div>Loading...</div>;
-
     if (listType === "custom") {
       return (
         <div>
@@ -222,14 +225,13 @@ export default function ListViewer() {
     return <h2>List not found</h2>;
   };
 
+  if (authLoading) return <div>Loading authentication...</div>;
+  if (!isAuthenticated) return <div>Please log in to view lists.</div>;
+
   return (
     <div
       className="container-fluid text-white py-4"
-      style={{
-        minHeight: "100vh",
-        position: "relative",
-        overflow: "hidden",
-      }}
+      style={{ minHeight: "100vh", position: "relative", overflow: "hidden" }}
     >
       <img
         src={backgroundImg}
@@ -244,7 +246,6 @@ export default function ListViewer() {
           zIndex: 0,
         }}
       />
-
       <div
         className="card bg-dark text-white shadow rounded-4"
         style={{
@@ -257,12 +258,8 @@ export default function ListViewer() {
         }}
       >
         <div className="max-w-4xl px-4">
-          <h1 className="text-2xl font-bold mb-6 text-center capitalize">
-            {listLabel}
-          </h1>
-          <div className="p-4 border rounded-lg shadow">
-            {renderContent()}
-          </div>
+          <h1 className="text-2xl font-bold mb-6 text-center capitalize">{listLabel}</h1>
+          <div className="p-4 border rounded-lg shadow">{renderContent()}</div>
         </div>
       </div>
     </div>
