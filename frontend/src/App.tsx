@@ -13,6 +13,7 @@ import Search from './pages/Search';
 import Settings from './pages/Settings';
 import SongDetails from './pages/SongDetails';
 import ArtistDetails from './pages/ArtistDetails';
+import Help from './pages/Help';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           <Route path="/song/:songId" element={<SongDetails />} />
           <Route path="/artist/:artistId" element={<ArtistDetails />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/help" element={<Help />} />
         </Routes>
       </div>
       <Footer />
