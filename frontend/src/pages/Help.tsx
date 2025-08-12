@@ -9,36 +9,36 @@ export default function Help() {
       title: "Step 1 — Go to Spotify's Privacy Settings",
       text: `Open Spotify’s Privacy Settings page: https://www.spotify.com/account/privacy/ 
 Scroll down until you see the "Download your data" section.`,
-      img: "/assets/help/step1.png", // screenshot of Spotify Privacy Settings page
+      img: "../assets/help/step1.png", // screenshot of Spotify Privacy Settings page
     },
     {
       title: "Step 2 — Request Extended Streaming History",
       text: `Under "Extended streaming history", click "Request data" and confirm. 
 This ensures you get your full listening history, not just the last few months. 
 Spotify will email you when your file is ready (this can take a few days).`,
-      img: "/assets/help/step2.png", // screenshot highlighting "Extended streaming history"
+      img: "../assets/help/step2.png", // screenshot highlighting "Extended streaming history"
     },
     {
       title: "Step 3 — Download Your Data File",
       text: `When you get Spotify’s email, click the download link, log in if asked, and download the .zip file. 
 Save it somewhere easy to find.`,
-      img: "/assets/help/step3.png",
+      img: "../assets/help/step3.png",
     },
     {
       title: "Step 4 — Find the Right File Inside",
       text: `Open the .zip file. Look for one or more JSON files named "StreamingHistory.json" or "StreamingHistory0.json", "StreamingHistory1.json", etc. 
 These contain your listening history. For a detailed look at what these files contain, Spotify provide a PDF with information about each field.`,
-      img: "/assets/help/step4.png",
+      img: "../assets/help/step4.png",
     },
     {
       title: "Step 5 — Log In and View Settings",
       text: `Log in to your account, and select 'Settings' from the profile dropdown in the top right of the site.`,
-      img: "/assets/help/step5.png",
+      img: "../assets/help/step5.png",
     },
     {
       title: "Step 6 — Upload Your Data",
       text: "In the settings page, use the 'Upload Spotify Data' section and click browse to select one of the JSON files from Step 4. Once the file has been selected you can click the upload button to start the upload process. The upload may take a few minutes depending on the size of the file. Note: only one file can be uploaded at a time.",
-      img: "/assets/help/step6.png",
+      img: "../assets/help/step6.png",
     },
     {
       title: "Troubleshooting",
