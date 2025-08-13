@@ -15,15 +15,12 @@ export default function Help() {
   const steps = [
     {
       title: "Step 1 — Go to Spotify's Privacy Settings",
-      text: `Open Spotify’s Privacy Settings page: https://www.spotify.com/account/privacy/ 
-Scroll down until you see the "Download your data" section.`,
+      text: `Open Spotify’s Privacy Settings page: https://www.spotify.com/account/privacy/ Scroll down until you see the "Download your data" section.`,
       img: step1Img,
     },
     {
       title: "Step 2 — Request Extended Streaming History",
-      text: `Under "Extended streaming history", click "Request data" and confirm. 
-This ensures you get your full listening history, not just the last few months. 
-Spotify will email you when your file is ready (this can take a few days).`,
+      text: `Under "Extended streaming history", click "Request data" and confirm from you email. This ensures you get your full listening history, not just the last few months. Spotify will email you when your file is ready (this can take a few days).`,
       img: step2Img,
     },
     {
@@ -34,8 +31,7 @@ Save it somewhere easy to find.`,
     },
     {
       title: "Step 4 — Find the Right File Inside",
-      text: `Open the .zip file. Look for one or more JSON files named "StreamingHistory.json" or "StreamingHistory0.json", "StreamingHistory1.json", etc. 
-These contain your listening history. For a detailed look at what these files contain, Spotify provide a PDF with information about each field.`,
+      text: `Open the .zip file. Look for one or more JSON files named "StreamingHistory.json" or "StreamingHistory0.json", "StreamingHistory1.json", etc. These contain your listening history. For a detailed look at what these files contain, Spotify provide a PDF with information about each field.`,
       img: step4Img,
     },
     {
@@ -150,7 +146,7 @@ These contain your listening history. For a detailed look at what these files co
                 <h2 className="mb-3">{step.title}</h2>
                 <div className="row align-items-center">
                   <div className="col-md-6">
-                    <p style={{ whiteSpace: "pre-line" }}>{step.text}</p>
+                    <p>{step.text}</p>
                   </div>
                   <div className="col-md-6">
                     <img
