@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { useAuth0 } from "@auth0/auth0-react";
 import backgroundImg from "../assets/images/background.jpg";
 
 import step1Img from "../assets/images/help/step1.png";
@@ -18,9 +17,7 @@ type Step = {
 };
 
 export default function Help() {
-  const { isAuthenticated, loginWithRedirect } = useAuth0();
   const [openGuide, setOpenGuide] = useState(true); // guide card collapsed/expanded
-  // You can add more collapsible cards later with their own state
 
   const steps: Step[] = [
     {
@@ -81,59 +78,6 @@ export default function Help() {
     },
   ];
 
-  if (!isAuthenticated) {
-    return (
-      <div
-        className="container-fluid text-white py-4"
-        style={{ minHeight: "100vh", position: "relative", overflow: "hidden" }}
-      >
-        {/* Background */}
-        <img
-          src={backgroundImg}
-          alt="Abstract Background"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            objectFit: "cover",
-            zIndex: 0,
-          }}
-        />
-        {/* Overlay */}
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: "rgba(0,0,0,0.5)",
-            zIndex: 1,
-          }}
-        />
-        {/* Content */}
-        <div style={{ position: "relative", zIndex: 2 }}>
-          <div className="row justify-content-center">
-            <div className="col-md-6">
-              <div className="card bg-dark text-white shadow p-4">
-                <h1 className="mb-3">Help</h1>
-                <p>You must be logged in to view the help guide.</p>
-                <button
-                  onClick={() => loginWithRedirect()}
-                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Log In
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       className="container-fluid text-white py-4"
@@ -159,8 +103,24 @@ export default function Help() {
         <div className="row justify-content-center">
           <div className="col-md-8">
 
+            {/* Header card with sharp top corners and rounded bottom corners */}
+            <div
+              className="card bg-dark text-white shadow"
+              style={{
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 0,
+                borderBottomLeftRadius: ".5rem",
+                borderBottomRightRadius: ".5rem",
+                marginTop: 0,
+              }}
+            >
+              <div className="card-body py-3">
+                <h1 className="mb-0">Help</h1>
+              </div>
+            </div>
+
             {/* Collapsible card: All steps in ONE card */}
-            <div className="card bg-dark text-white shadow mb-4">
+            <div className="card bg-dark text-white shadow mt-0 mb-4">
               <button
                 className="w-100 text-start p-4 d-flex justify-content-between align-items-center bg-dark border-0"
                 onClick={() => setOpenGuide((v) => !v)}
@@ -168,10 +128,10 @@ export default function Help() {
                 aria-controls="guide-body"
                 style={{ cursor: "pointer" }}
               >
-                <span className="h4 m-0">
-                  <i className="bi bi-question-circle me-2" /> How do I download and upload my Spotify data?
+                <span className="h4 text-white m-0">
+                  <i className="bi bi-cloud-arrow-up me-2" /> How do I download and upload my Spotify data?
                 </span>
-                <i className={`bi ms-3 ${openGuide ? "bi-chevron-up" : "bi-chevron-down"}`} />
+                <i className={`bi ms-3 text-white ${openGuide ? "bi-chevron-up" : "bi-chevron-down"}`} />
               </button>
 
               {openGuide && (
