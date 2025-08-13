@@ -1,4 +1,5 @@
-import { useState, ReactNode } from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import backgroundImg from "../assets/images/background.jpg";
 
