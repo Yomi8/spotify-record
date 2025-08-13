@@ -81,7 +81,7 @@ export default function Help() {
   return (
     <div
       className="container-fluid text-white py-4"
-      style={{ minHeight: "100vh", position: "relative", overflow: "hidden" }}
+      style={{ minHeight: "100vh", position: "relative", overflow: "visible" }}
     >
       {/* Background */}
       <img
@@ -99,7 +99,7 @@ export default function Help() {
       />
 
       {/* Content */}
-      <div style={{ position: "relative", zIndex: 2, marginTop: "-65px" }}>
+      <div style={{ position: "relative", zIndex: 2, marginTop: "-33px" }}>
         <div className="row justify-content-center">
           <div className="col-md-8">
 
@@ -114,13 +114,13 @@ export default function Help() {
                 marginTop: 0,
               }}
             >
-              <div className="card-body py-3">
+              <div className="card-body py-3 mb-4">
                 <h1 className="mb-0">Help</h1>
               </div>
             </div>
 
             {/* Collapsible card: All steps in ONE card */}
-            <div className="card bg-dark text-white shadow mt-0 mb-4">
+            <div className="card bg-dark text-white shadow mt-0 mb-2">
               <button
                 className="w-100 text-start p-4 d-flex justify-content-between align-items-center bg-dark border-0"
                 onClick={() => setOpenGuide((v) => !v)}
@@ -168,7 +168,7 @@ export default function Help() {
             </div>
 
             {/* Example of another collapsible FAQ card (placeholder) */}
-            <div className="card bg-dark text-white shadow mb-4">
+            <div className="card bg-dark text-white shadow mb-2">
               <div className="p-4">
                 <h4 className="m-0">
                   <i className="bi bi-gear-wide-connected me-2" /> What file(s) should I upload?
