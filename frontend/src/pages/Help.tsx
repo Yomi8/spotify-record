@@ -105,7 +105,7 @@ export default function Help() {
 
             {/* Header card */}
             <div
-              className="card bg-dark text-white shadow mx-0"
+              className="card bg-dark text-white shadow mx-0 mb-4"
               style={{
                 borderTopLeftRadius: 0,
                 borderTopRightRadius: 0,
