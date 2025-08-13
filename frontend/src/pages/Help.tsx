@@ -15,7 +15,15 @@ export default function Help() {
   const steps = [
     {
       title: "Step 1 — Go to Spotify's Privacy Settings",
-      text: `Open Spotify’s Privacy Settings page: https://www.spotify.com/account/privacy/ Scroll down until you see the "Download your data" section.`,
+      text: (
+        <>
+          Open Spotify’s Privacy Settings page:{" "}
+          <a href="https://www.spotify.com/account/privacy/" target="_blank" rel="noopener noreferrer">
+            https://www.spotify.com/account/privacy/
+          </a>.
+          Scroll down until you see the "Download your data" section.
+        </>
+      ),
       img: step1Img,
     },
     {
