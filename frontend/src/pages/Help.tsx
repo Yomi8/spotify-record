@@ -46,13 +46,13 @@ export default function Help() {
       img: step2Img,
     },
     {
-      title: "Step 3 — Download Your Data File",
+      title: "Step 3 — Download Your Data",
       text:
         "When you get Spotify’s ready email, click the download link, log in if asked, and download the .zip file. Save it somewhere easy to find.",
       img: step3Img,
     },
     {
-      title: "Step 4 — Find the Right File Inside",
+      title: "Step 4 — Getting the Right Files",
       text:
         "Open the .zip file. Look for one or more JSON files named “StreamingHistory.json” or “StreamingHistory0.json”, “StreamingHistory1.json”, etc. These contain your listening history.",
       img: step4Img,
@@ -68,14 +68,6 @@ export default function Help() {
       text:
         "In Settings, use “Upload Spotify Data”. Click “Choose File”, select one of the JSON files from Step 4, then click “Upload”. Processing may take a few minutes depending on file size. Note: only one file can be uploaded at a time.",
       img: step6Img,
-    },
-    {
-      title: "Troubleshooting",
-      bullets: [
-        "Can't find the file? Make sure you extracted the .zip first.",
-        "Upload error? Ensure you’re uploading a .json file, not the .zip.",
-        "Data looks short? You may have exported non-extended history. Request “Extended streaming history” and try again.",
-      ],
     },
   ];
 
