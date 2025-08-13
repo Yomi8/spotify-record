@@ -112,7 +112,7 @@ export default function Help() {
             </div>
 
             {/* Collapsible card: All steps in ONE card */}
-            <div className="card bg-dark text-white shadow mt-0 mb-2">
+            <div className="card bg-dark text-white shadow mt-0 mb-2 rounded-4">
               <button
                 className="w-100 text-start p-4 d-flex justify-content-between align-items-center bg-dark border-0"
                 onClick={() => setOpenGuide((v) => !v)}
@@ -160,7 +160,7 @@ export default function Help() {
             </div>
 
             {/* Example of another collapsible FAQ card (placeholder) */}
-            <div className="card bg-dark text-white shadow mb-2">
+            <div className="card bg-dark text-white shadow mb-2 rounded-4">
               <button
                 className="w-100 text-start p-4 d-flex justify-content-between align-items-center bg-dark border-0"
                 onClick={() => setOpenTemplate(v => !v)}
