@@ -103,18 +103,17 @@ export default function Help() {
         <div className="row justify-content-center">
           <div className="col-md-8">
 
-            {/* Header card with sharp top corners and rounded bottom corners */}
+            {/* Header card */}
             <div
-              className="card bg-dark text-white shadow"
+              className="card bg-dark text-white shadow mx-0"
               style={{
                 borderTopLeftRadius: 0,
                 borderTopRightRadius: 0,
                 borderBottomLeftRadius: ".5rem",
                 borderBottomRightRadius: ".5rem",
-                marginTop: 0,
               }}
             >
-              <div className="card-body py-3 mb-4">
+              <div className="card-body py-3 px-4">
                 <h1 className="mb-0">Help</h1>
               </div>
             </div>
