@@ -17,7 +17,8 @@ type Step = {
 };
 
 export default function Help() {
-  const [openGuide, setOpenGuide] = useState(true); // guide card collapsed/expanded
+  const [openGuide, setOpenGuide] = useState(false); // guide card collapsed/expanded
+  const [openTemplate, setOpenTemplate] = useState(false);
 
   const steps: Step[] = [
     {
@@ -168,18 +169,27 @@ export default function Help() {
 
             {/* Example of another collapsible FAQ card (placeholder) */}
             <div className="card bg-dark text-white shadow mb-2">
-              <div className="p-4">
-                <h4 className="m-0">
-                  <i className="bi bi-gear-wide-connected me-2" /> What file(s) should I upload?
-                </h4>
-                <p className="mt-3 mb-0 text-gray-300">
-                  Upload only the <code>StreamingHistory*.json</code> files from the Spotify export (not the entire .zip).
-                </p>
-              </div>
+              <button
+                className="w-100 text-start p-4 d-flex justify-content-between align-items-center bg-dark border-0"
+                onClick={() => setOpenTemplate(v => !v)}
+                aria-expanded={openTemplate}
+                aria-controls="files-faq-body"
+                style={{ cursor: "pointer" }}
+              >
+                <span className="h4 text-white m-0">
+                  <i className="bi bi-gear-wide-connected me-2" /> Template for another FAQ
+                </span>
+                <i className={`bi ms-3 text-white ${openTemplate ? "bi-chevron-up" : "bi-chevron-down"}`} />
+              </button>
+
+              {openTemplate && (
+                <div id="files-faq-body" className="px-4 pb-4">
+                  <p className="mt-3 mb-0 text-gray-300">
+                    Example of some text
+                  </p>
+                </div>
+              )}
             </div>
-
-            {/* Add more cards here as needed */}
-
           </div>
         </div>
       </div>
