@@ -99,7 +99,7 @@ export default function Help() {
       />
 
       {/* Content */}
-      <div style={{ position: "relative", zIndex: 2 }}>
+      <div style={{ position: "relative", zIndex: 2, marginTop: "-65px" }}>
         <div className="row justify-content-center">
           <div className="col-md-8">
 
