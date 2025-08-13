@@ -52,6 +52,7 @@ export default function Lists() {
                 borderTopRightRadius: 0,
                 borderBottomLeftRadius: ".5rem",
                 borderBottomRightRadius: ".5rem",
+                maxWidth: "fit-content",
               }}
             >
               <div className="card-body py-3 px-4">
