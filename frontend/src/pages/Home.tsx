@@ -145,7 +145,7 @@ export default function Home() {
                   <div className="col-md-4">
                     <div className="card bg-secondary h-100">
                       <div className="card-body">
-                        <h5 className="card-title mb-3">Most Played</h5>
+                        <h5 className="card-title mb-3">Most Played Song</h5>
                         <div className="d-flex align-items-center">
                           {stats.most_played_song_image_url && (
                             <img 
@@ -158,7 +158,7 @@ export default function Home() {
                           <div>
                             <p className="fw-bold mb-1">{stats.most_played_song}</p>
                             <Link 
-                              to={`/artist/${stats.most_played_artist_id}`}
+                              to={`/artist/${stats.most_played_song_id}`}
                               className="text-light text-decoration-none"
                             >
                               {stats.most_played_artist}
@@ -186,7 +186,7 @@ export default function Home() {
                           <div>
                             <p className="fw-bold mb-1">{stats.longest_binge_song}</p>
                             <Link 
-                              to={`/artist/${stats.longest_binge_artist_id}`}
+                              to={`/artist/${stats.longest_binge_song_id}`}
                               className="text-light text-decoration-none"
                             >
                               {stats.longest_binge_artist}
