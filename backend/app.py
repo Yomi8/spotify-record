@@ -291,15 +291,15 @@ def enrich_snapshot(snapshot):
     song_name = None
     artist_name = None
     image_url = None
-    if snapshot.get("most_played_song_id") and snapshot.get("most_played_artist_id"):
+    if snapshot.get("most_played_song_id"):
         song_row = run_query(
             """
             SELECT s.track_name, a.artist_name, s.image_url
             FROM core_songs s
             JOIN core_artists a ON s.artist_id = a.artist_id
-            WHERE s.song_id = %s AND a.artist_id = %s
+            WHERE s.song_id = %s
             """,
-            (snapshot["most_played_song_id"], snapshot["most_played_artist_id"]),
+            (snapshot["most_played_song_id"],),
             fetchone=True,
             dict_cursor=True
         )
