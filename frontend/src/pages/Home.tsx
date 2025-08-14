@@ -158,7 +158,7 @@ export default function Home() {
                           <div>
                             <p className="fw-bold mb-1">{stats.most_played_song}</p>
                             <Link 
-                              to={`/artist/${stats.most_played_song_id}`}
+                              to={`/song/${stats.most_played_song_id}`}
                               className="text-light text-decoration-none"
                             >
                               {stats.most_played_artist}
@@ -186,7 +186,7 @@ export default function Home() {
                           <div>
                             <p className="fw-bold mb-1">{stats.longest_binge_song}</p>
                             <Link 
-                              to={`/artist/${stats.longest_binge_song_id}`}
+                              to={`/song/${stats.longest_binge_song_id}`}
                               className="text-light text-decoration-none"
                             >
                               {stats.longest_binge_artist}
