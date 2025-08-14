@@ -1,6 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import backgroundImg from '../assets/images/background.jpg';
 
 export default function Home() {
@@ -128,12 +129,24 @@ export default function Home() {
 
               {isAuthenticated && stats && (
                 <div className="row g-4">
+                  {/* Total Plays Section */}
+                  <div className="col-md-4">
+                    <div className="card bg-secondary h-100">
+                      <div className="card-body">
+                        <h5 className="card-title mb-3">Total Plays</h5>
+                        <div className="d-flex align-items-center">
+                          <div className="display-4 mb-0">{stats.total_songs_played}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Most Played Section */}
-                  <div className="col-md-6">
-                    <div className="card bg-secondary">
+                  <div className="col-md-4">
+                    <div className="card bg-secondary h-100">
                       <div className="card-body">
                         <h5 className="card-title mb-3">Most Played</h5>
-                        <div className="d-flex align-items-center mb-3">
+                        <div className="d-flex align-items-center">
                           {stats.most_played_song_image_url && (
                             <img 
                               src={stats.most_played_song_image_url} 
@@ -143,9 +156,13 @@ export default function Home() {
                             />
                           )}
                           <div>
-                            <p className="fw-bold mb-1">Song: {stats.most_played_song}</p>
-                            <p className="mb-0">Artist: {stats.most_played_artist}</p>
-                            <small className="text-light-50">Total Plays: {stats.total_plays}</small>
+                            <p className="fw-bold mb-1">{stats.most_played_song}</p>
+                            <Link 
+                              to={`/artist/${stats.most_played_artist_id}`}
+                              className="text-light text-decoration-none"
+                            >
+                              {stats.most_played_artist}
+                            </Link>
                           </div>
                         </div>
                       </div>
@@ -153,11 +170,11 @@ export default function Home() {
                   </div>
 
                   {/* Longest Binge Section */}
-                  <div className="col-md-6">
-                    <div className="card bg-secondary">
+                  <div className="col-md-4">
+                    <div className="card bg-secondary h-100">
                       <div className="card-body">
                         <h5 className="card-title mb-3">Longest Binge</h5>
-                        <div className="d-flex align-items-center mb-3">
+                        <div className="d-flex align-items-center">
                           {stats.longest_binge_song_image_url && (
                             <img 
                               src={stats.longest_binge_song_image_url} 
@@ -167,8 +184,13 @@ export default function Home() {
                             />
                           )}
                           <div>
-                            <p className="fw-bold mb-1">Song: {stats.longest_binge_song}</p>
-                            <p className="mb-0">Artist: {stats.longest_binge_artist}</p>
+                            <p className="fw-bold mb-1">{stats.longest_binge_song}</p>
+                            <Link 
+                              to={`/artist/${stats.longest_binge_artist_id}`}
+                              className="text-light text-decoration-none"
+                            >
+                              {stats.longest_binge_artist}
+                            </Link>
                           </div>
                         </div>
                       </div>
