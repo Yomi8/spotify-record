@@ -23,7 +23,7 @@ export default function Lists() {
   return (
     <div
       className="container-fluid text-white py-4"
-      style={{ minHeight: "100vh", position: "relative", overflow: "hidden" }}
+      style={{ minHeight: "100vh", position: "relative", overflow: "visible" }}
     >
       {/* Background */}
       <img
