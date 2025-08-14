@@ -1,5 +1,4 @@
-import { useState } from "react";
-import type { ReactNode } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import backgroundImg from "../assets/images/background.jpg";
 
 import step1Img from "../assets/images/help/step1.png";
@@ -9,72 +8,108 @@ import step4Img from "../assets/images/help/step4.png";
 import step5Img from "../assets/images/help/step5.png";
 import step6Img from "../assets/images/help/step6.png";
 
-type Step = {
-  title: string;
-  text?: ReactNode;
-  bullets?: string[];
-  img?: string;
-};
 
 export default function Help() {
-  const [openGuide, setOpenGuide] = useState(false); // guide card collapsed/expanded
-  const [openTemplate, setOpenTemplate] = useState(false);
+  const { isAuthenticated, loginWithRedirect } = useAuth0();
 
-  const steps: Step[] = [
+  const steps = [
     {
       title: "Step 1 — Go to Spotify's Privacy Settings",
-      text: (
-        <>
-          Open Spotify’s Privacy Settings page:{" "}
-          <a
-            href="https://www.spotify.com/account/privacy/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-decoration-underline"
-          >
-            https://www.spotify.com/account/privacy/
-          </a>
-          . Scroll down until you see the “Download your data” section.
-        </>
-      ),
+      text: `Open Spotify’s Privacy Settings page: https://www.spotify.com/account/privacy/ Scroll down until you see the "Download your data" section.`,
       img: step1Img,
     },
     {
       title: "Step 2 — Request Extended Streaming History",
-      text:
-        "Under “Extended streaming history”, click “Request data” and confirm in the email Spotify sends you. This ensures you get your full listening history, not just the last few months. Spotify will email you again when your file is ready (this can take a few days).",
+      text: `Under "Extended streaming history", click "Request data" and confirm from you email. This ensures you get your full listening history, not just the last few months. Spotify will email you when your file is ready (this can take a few days).`,
       img: step2Img,
     },
     {
-      title: "Step 3 — Download Your Data",
-      text:
-        "When you get Spotify’s ready email, click the download link, log in if asked, and download the .zip file. Save it somewhere easy to find.",
+      title: "Step 3 — Download Your Data File",
+      text: `When you get Spotify’s email, click the download link, log in if asked, and download the .zip file. 
+Save it somewhere easy to find.`,
       img: step3Img,
     },
     {
-      title: "Step 4 — Getting the Right Files",
-      text:
-        "Open the .zip file. Look for one or more JSON files named “StreamingHistory.json” or “StreamingHistory0.json”, “StreamingHistory1.json”, etc. These contain your listening history.",
+      title: "Step 4 — Find the Right File Inside",
+      text: `Open the .zip file. Look for one or more JSON files named "StreamingHistory.json" or "StreamingHistory0.json", "StreamingHistory1.json", etc. These contain your listening history. For a detailed look at what these files contain, Spotify provide a PDF with information about each field.`,
       img: step4Img,
     },
     {
-      title: "Step 5 — Log In and Open Settings",
-      text:
-        "Log in to your account here, and choose “Settings” from your profile menu (top-right).",
+      title: "Step 5 — Log In and View Settings",
+      text: `Log in to your account, and select 'Settings' from the profile dropdown in the top right of the site.`,
       img: step5Img,
     },
     {
       title: "Step 6 — Upload Your Data",
-      text:
-        "In Settings, use “Upload Spotify Data”. Click “Choose File”, select one of the JSON files from Step 4, then click “Upload”. Processing may take a few minutes depending on file size. Note: only one file can be uploaded at a time.",
+      text: "In the settings page, use the 'Upload Spotify Data' section and click browse to select one of the JSON files from Step 4. Once the file has been selected you can click the upload button to start the upload process. The upload may take a few minutes depending on the size of the file. Note: only one file can be uploaded at a time.",
       img: step6Img,
     },
+    {
+      title: "Troubleshooting",
+      text: `• Can't find the file? Make sure you extracted the .zip.\n
+• Upload error? Ensure you’re uploading a JSON file, not the zip.\n
+• Data looks short? Spotify may have only included recent months unless you requested extended history.`,
+      img: "",
+    },
   ];
+
+  if (!isAuthenticated) {
+    return (
+      <div
+        className="container-fluid text-white py-4"
+        style={{ minHeight: "100vh", position: "relative", overflow: "hidden" }}
+      >
+        {/* Background image */}
+        <img
+          src={backgroundImg}
+          alt="Abstract Background"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            objectFit: "cover",
+            zIndex: 0,
+          }}
+        />
+        {/* Overlay */}
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 1,
+          }}
+        />
+        {/* Content */}
+        <div style={{ position: "relative", zIndex: 2 }}>
+          <div className="row justify-content-center">
+            <div className="col-md-6">
+              <div className="card bg-dark text-white shadow p-4">
+                <h1 className="mb-3">Help</h1>
+                <p>You must be logged in to view the help guide.</p>
+                <button
+                  onClick={() => loginWithRedirect()}
+                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Log In
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       className="container-fluid text-white py-4"
-      style={{ minHeight: "100vh", position: "relative", overflow: "visible" }}
+      style={{ minHeight: "100vh", position: "relative", overflow: "hidden" }}
     >
       {/* Background */}
       <img
@@ -90,99 +125,39 @@ export default function Help() {
           zIndex: 0,
         }}
       />
-
+      {/* Overlay */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          background: "rgba(0,0,0,0.5)",
+          zIndex: 1,
+        }}
+      />
       {/* Content */}
-      <div style={{ position: "relative", zIndex: 2, marginTop: "-33px" }}>
+      <div style={{ position: "relative", zIndex: 2 }}>
         <div className="row justify-content-center">
           <div className="col-md-8">
-
-            {/* Header card */}
-            <div
-              className="card bg-dark text-white shadow mx-0 mb-4"
-              style={{
-                borderTopLeftRadius: 0,
-                borderTopRightRadius: 0,
-                borderBottomLeftRadius: ".5rem",
-                borderBottomRightRadius: ".5rem",
-                maxWidth: "fit-content",
-              }}
-            >
-              <div className="card-body py-3 px-4">
-                <h1 className="mb-0">Help</h1>
+            {steps.map((step, index) => (
+              <div key={index} className="card bg-dark text-white shadow p-4 mb-4">
+                <h2 className="mb-3">{step.title}</h2>
+                <div className="row align-items-center">
+                  <div className="col-md-6">
+                    <p>{step.text}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <img
+                      src={step.img}
+                      alt={step.title}
+                      className="img-fluid rounded shadow"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-
-            {/* Collapsible card: All steps in ONE card */}
-            <div className="card bg-dark text-white shadow mt-0 mb-2 rounded-4">
-              <button
-                className="w-100 text-start p-4 d-flex justify-content-between align-items-center bg-dark border-0"
-                onClick={() => setOpenGuide((v) => !v)}
-                aria-expanded={openGuide}
-                aria-controls="guide-body"
-                style={{ cursor: "pointer" }}
-              >
-                <span className="h4 text-white m-0">
-                  <i className="bi bi-cloud-arrow-up me-2" /> How do I download and upload my Spotify data?
-                </span>
-                <i className={`bi ms-3 text-white ${openGuide ? "bi-chevron-up" : "bi-chevron-down"}`} />
-              </button>
-
-              {openGuide && (
-                <div id="guide-body" className="px-4 pb-4">
-                  {steps.map((step, index) => (
-                    <div key={index} className="card bg-secondary text-white shadow-sm p-3 mb-3">
-                      <h5 className="mb-3">{step.title}</h5>
-                      <div className="row align-items-center g-3">
-                        <div className="col-md-6">
-                          {step.bullets ? (
-                            <ul className="mb-0">
-                              {step.bullets.map((b, i) => (
-                                <li key={i}>{b}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="mb-0">{step.text}</p>
-                          )}
-                        </div>
-                        {step.img && (
-                          <div className="col-md-6">
-                            <img
-                              src={step.img}
-                              alt={step.title}
-                              className="img-fluid rounded shadow"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Example of another collapsible FAQ card (placeholder) */}
-            <div className="card bg-dark text-white shadow mb-2 rounded-4">
-              <button
-                className="w-100 text-start p-4 d-flex justify-content-between align-items-center bg-dark border-0"
-                onClick={() => setOpenTemplate(v => !v)}
-                aria-expanded={openTemplate}
-                aria-controls="files-faq-body"
-                style={{ cursor: "pointer" }}
-              >
-                <span className="h4 text-white m-0">
-                  <i className="bi bi-gear-wide-connected me-2" /> Template for another FAQ
-                </span>
-                <i className={`bi ms-3 text-white ${openTemplate ? "bi-chevron-up" : "bi-chevron-down"}`} />
-              </button>
-
-              {openTemplate && (
-                <div id="files-faq-body" className="px-4 pb-4">
-                  <p className="mt-3 mb-0 text-gray-300">
-                    Example of some text
-                  </p>
-                </div>
-              )}
-            </div>
+            ))}
           </div>
         </div>
       </div>
