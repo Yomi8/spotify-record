@@ -51,11 +51,7 @@ export default function Home() {
   return (
     <div
       className="container-fluid text-white py-4"
-      style={{
-        minHeight: '100vh',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
+      style={{ minHeight: '100vh', position: 'relative', overflow: 'visible' }}
     >
       {/* Background image */}
       <img
@@ -72,60 +68,114 @@ export default function Home() {
         }}
       />
 
-      {/* Main content */}
-      <div style={{position: 'relative', zIndex: 2 }}>
-        <h1>
-          Welcome{' '}
-          <span>
-            {isAuthenticated
-              ? user?.nickname || user?.name || user?.email || 'User'
-              : 'Guest'}
-          </span>
-          !
-        </h1>
-        <div className="row mt-4">
-          {/* Left card */}
-          <div className="col-md-6">
-            <div className="card bg-dark text-white shadow">
-              <div className="card-header">
-                <i className="bi bi-bar-chart me-2"></i> Quick Bits
+      {/* Content */}
+      <div style={{ position: 'relative', zIndex: 2, marginTop: '-33px' }}>
+        <div className="row justify-content-center">
+          <div className="col-md-8">
+            {/* Header card */}
+            <div
+              className="card bg-dark text-white shadow mx-0 mb-4"
+              style={{
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 0,
+                borderBottomLeftRadius: '.5rem',
+                borderBottomRightRadius: '.5rem',
+                maxWidth: 'fit-content',
+              }}
+            >
+              <div className="card-body py-3 px-4">
+                <h1 className="mb-0">
+                  Welcome, {isAuthenticated
+                    ? user?.nickname || user?.name || user?.email || 'User'
+                    : 'Guest'}
+                </h1>
               </div>
-              <div className="card-body">
-                {!isAuthenticated && (
-                  <p>Please log in to view your stats.</p>
-                )}
+            </div>
 
-                {isAuthenticated && loading && (
-                  <p>Loading your stats... (attempt {retryCount + 1}/10)</p>
-                )}
+            {/* Stats card */}
+            <div className="card bg-dark text-white shadow p-4">
+              <div className="d-flex align-items-center mb-4">
+                <i className="bi bi-graph-up me-2"></i>
+                <h4 className="mb-0">Your Top Charts</h4>
+              </div>
 
-                {isAuthenticated && error && (
-                  <p className="text-danger">{error}</p>
-                )}
+              {!isAuthenticated && (
+                <div className="alert alert-info">
+                  Please log in to view your stats.
+                </div>
+              )}
 
-                {isAuthenticated && !stats && retryCount >= 10 && (
-                  <p className="text-warning">
-                    Snapshot took too long to generate. Please try again later.
-                  </p>
-                )}
-
-                {isAuthenticated && stats && (
-                  <div>
-                    <p><strong>Total Plays:</strong> {stats.total_plays}</p>
-                    <p><strong>Top Song:</strong> {stats.most_played_song}</p>
-                    <p><strong>Top Artist:</strong> {stats.most_played_artist}</p>
-                    {stats.most_played_song_image_url && (
-                      <img src={stats.most_played_song_image_url} alt="Top Song Cover" style={{width: 64, height: 64}} />
-                    )}
-
-                    <p><strong>Longest Binge Song:</strong> {stats.longest_binge_song}</p>
-                    <p><strong>Binge Artist:</strong> {stats.longest_binge_artist}</p>
-                    {stats.longest_binge_song_image_url && (
-                      <img src={stats.longest_binge_song_image_url} alt="Binge Song Cover" style={{width: 64, height: 64}} />
-                    )}
+              {isAuthenticated && loading && (
+                <div className="text-center p-4">
+                  <div className="spinner-border text-light mb-2" role="status">
+                    <span className="visually-hidden">Loading...</span>
                   </div>
-                )}
-              </div>
+                  <p className="mb-0">Loading your stats... (attempt {retryCount + 1}/10)</p>
+                </div>
+              )}
+
+              {isAuthenticated && error && (
+                <div className="alert alert-danger">
+                  {error}
+                </div>
+              )}
+
+              {isAuthenticated && !stats && retryCount >= 10 && (
+                <div className="alert alert-warning">
+                  Snapshot took too long to generate. Please try again later.
+                </div>
+              )}
+
+              {isAuthenticated && stats && (
+                <div className="row g-4">
+                  {/* Most Played Section */}
+                  <div className="col-md-6">
+                    <div className="card bg-secondary">
+                      <div className="card-body">
+                        <h5 className="card-title mb-3">Most Played</h5>
+                        <div className="d-flex align-items-center mb-3">
+                          {stats.most_played_song_image_url && (
+                            <img 
+                              src={stats.most_played_song_image_url} 
+                              alt="Top Song" 
+                              className="rounded me-3"
+                              style={{width: 64, height: 64}} 
+                            />
+                          )}
+                          <div>
+                            <p className="fw-bold mb-1">Song: {stats.most_played_song}</p>
+                            <p className="mb-0">Artist: {stats.most_played_artist}</p>
+                            <small className="text-light-50">Total Plays: {stats.total_plays}</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Longest Binge Section */}
+                  <div className="col-md-6">
+                    <div className="card bg-secondary">
+                      <div className="card-body">
+                        <h5 className="card-title mb-3">Longest Binge</h5>
+                        <div className="d-flex align-items-center mb-3">
+                          {stats.longest_binge_song_image_url && (
+                            <img 
+                              src={stats.longest_binge_song_image_url} 
+                              alt="Binge Song" 
+                              className="rounded me-3"
+                              style={{width: 64, height: 64}} 
+                            />
+                          )}
+                          <div>
+                            <p className="fw-bold mb-1">Song: {stats.longest_binge_song}</p>
+                            <p className="mb-0">Artist: {stats.longest_binge_artist}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
