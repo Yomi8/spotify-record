@@ -435,49 +435,46 @@ def generate_snapshot_for_period(user_id, period):
                 binge_start_ts = pendulum.instance(stats["binge_start"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_start") else None
                 binge_end_ts = pendulum.instance(stats["binge_end"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_end") else None
 
-                snapshot_data = {
-                    "user_id": user_id,
-                    "range_type": period,
-                    "snapshot_time": now.to_datetime_string(),  # UTC
-                    "total_songs_played": stats["total_songs"],
-                    "most_played_song_id": stats.get("top_song"),
-                    "most_played_artist_name": stats.get("top_artist"),
-                    "longest_binge_song_id": stats.get("binge_song"),
-                    "binge_count": stats.get("binge_count"),
-                    "binge_start_ts": binge_start_ts,
-                    "binge_end_ts": binge_end_ts,
-                    "range_start": start.to_datetime_string(),  # UTC
-                    "range_end": end.to_datetime_string(),      # UTC
-                }
+                # Update the most played song/artist query
+                most_played = run_query("""
+                    SELECT 
+                        ul.song_id,
+                        s.artist_id,
+                        COUNT(*) as play_count
+                    FROM usage_logs ul
+                    JOIN core_songs s ON ul.song_id = s.song_id
+                    WHERE ul.user_id = %s
+                    AND ul.ts BETWEEN %s AND %s
+                    GROUP BY ul.song_id, s.artist_id
+                    ORDER BY play_count DESC
+                    LIMIT 1
+                """, (user_id, start, end), fetchone=True, dict_cursor=True)
 
-                query = """
+                # Update the snapshot insertion
+                run_query("""
                     INSERT INTO user_snapshots (
-                        user_id, total_songs_played, most_played_song_id, 
-                        most_played_artist_name, longest_binge_song_id, binge_count,
-                        snapshot_time, binge_start_ts, binge_end_ts,
+                        user_id, total_songs_played, 
+                        most_played_song_id, most_played_artist_id,
+                        longest_binge_song_id, binge_count,
+                        binge_start_ts, binge_end_ts,
                         range_start, range_end, range_type
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """
-                run_query(
-                    query,
-                    (
-                        snapshot_data["user_id"],
-                        snapshot_data["total_songs_played"],
-                        snapshot_data["most_played_song_id"],
-                        snapshot_data["most_played_artist_name"],
-                        snapshot_data["longest_binge_song_id"],
-                        snapshot_data["binge_count"],
-                        snapshot_data["snapshot_time"],
-                        snapshot_data["binge_start_ts"],
-                        snapshot_data["binge_end_ts"],
-                        snapshot_data["range_start"],
-                        snapshot_data["range_end"],
-                        snapshot_data["range_type"],
-                    ),
-                    commit=True,
-                )
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    )
+                """, (
+                    user_id, stats["total_songs"],
+                    most_played["song_id"] if most_played else None,
+                    most_played["artist_id"] if most_played else None,
+                    stats.get("binge_song"),
+                    stats.get("binge_count"),
+                    binge_start_ts,
+                    binge_end_ts,
+                    start.to_datetime_string(),
+                    end.to_datetime_string(),
+                    period
+                ), commit=True)
 
-                logger.info(f"Snapshot generated for user {user_id} ({period}) at {snapshot_data['snapshot_time']}")
+                logger.info(f"Snapshot generated for user {user_id} ({period}) at {now.to_datetime_string()}")
 
     except Exception as e:
         logger.error(f"Error generating snapshot for user {user_id} ({period}): {e}")
