@@ -452,8 +452,8 @@ def get_latest_snapshot(period):
     if snapshot:
         snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
 
-        print(f"Snapshot time: {snapshot_time.to_iso8601_string()}", flush=True)
-        print(f"Current time: {now.to_iso8601_string()}", flush=True)
+        print(f"Snapshot time: {snapshot_time}", flush=True)
+        print(f"Current time: {now}", flush=True)
 
         age_minutes = now.diff(snapshot_time).in_minutes()
         print(f"Snapshot age: {age_minutes} minutes", flush=True)
