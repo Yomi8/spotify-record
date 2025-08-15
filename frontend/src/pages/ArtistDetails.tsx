@@ -51,7 +51,7 @@ export default function ArtistDetails() {
           return;
         }
 
-        const songsRes = await fetch(`/api/artist/${artistId}/songs`, {
+        const songsRes = await fetch(`/api/artist/${artistId}/songs?limit=10`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -176,7 +176,7 @@ export default function ArtistDetails() {
             <div className="col-md-4 mb-4">
               <div className="card bg-dark border-secondary">
                 <div className="card-header bg-dark border-secondary">
-                  <h3 className="h5 mb-0 text-light">Top Songs</h3>
+                  <h3 className="h5 mb-0 text-light">Your Top 10 Songs</h3>
                 </div>
                 <div className="card-body text-light">
                   <ul className="list-group list-group-flush">
