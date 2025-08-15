@@ -451,6 +451,10 @@ def get_latest_snapshot(period):
     # 2. If we have a snapshot, check if it's fresh enough
     if snapshot:
         snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
+
+        print(f"Snapshot time: {snapshot_time.to_iso8601_string()}", flush=True)
+        print(f"Current time: {now.to_iso8601_string()}", flush=True)
+
         age_minutes = now.diff(snapshot_time).in_minutes()
         print(f"Snapshot age: {age_minutes} minutes", flush=True)
         if age_minutes < 10:  # Snapshot is fresh (less than 10 minutes old)
