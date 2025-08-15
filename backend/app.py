@@ -420,7 +420,6 @@ def get_latest_snapshot(period):
                 fetchone=True,
                 dict_cursor=True,
             )
-            print("Fetched snapshot:", snapshot, flush=True)
             return snapshot
         except Exception as e:
             print(f"Error fetching snapshot: {e}", flush=True)
@@ -433,18 +432,15 @@ def get_latest_snapshot(period):
     if snapshot:
         snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
         age_minutes = now.diff(snapshot_time).in_minutes()
-        print(f"Found existing snapshot: {snapshot}, which is {age_minutes} minutes old.", flush=True)
         if age_minutes < 10:  # Snapshot is fresh (less than 10 minutes old)
             redis_conn.delete(redis_key)  # Clear any running job marker
             snapshot = enrich_snapshot(snapshot)
             return jsonify({"snapshot": snapshot}), 200
 
-    print("No fresh snapshot found, checking for running job...", flush=True)
     # 3. Check if a job is already running
     if redis_conn.exists(redis_key):
         return jsonify({"message": "Snapshot generation in progress"}), 202
 
-    print("No running job found, starting a new one...", flush=True)
     # 4. No fresh snapshot and no running job, start a new one
     redis_conn.set(redis_key, "1", ex=600)  # expire in 10 mins
     queue = rq.get_queue()

@@ -412,7 +412,7 @@ def generate_snapshot_for_period(user_id, period):
     logger.info(f"Starting snapshot generation for user {user_id} period {period}")
     redis_key = f"snapshot_job:{user_id}:{period}"
 
-    now = pendulum.now("UTC")  # <-- Always use UTC
+    now = pendulum.now("UTC")  # Ensure we're using UTC
 
     try:
         with db_pool.get_connection() as conn:
@@ -435,31 +435,18 @@ def generate_snapshot_for_period(user_id, period):
                 binge_start_ts = pendulum.instance(stats["binge_start"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_start") else None
                 binge_end_ts = pendulum.instance(stats["binge_end"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_end") else None
 
-                # Update the most played song/artist query
+                # Update the snapshot insertion to use UTC timestamps
                 most_played = run_query("""
-                    SELECT 
-                        ul.song_id,
-                        s.artist_id,
-                        COUNT(*) as play_count
-                    FROM usage_logs ul
-                    JOIN core_songs s ON ul.song_id = s.song_id
-                    WHERE ul.user_id = %s
-                    AND ul.ts BETWEEN %s AND %s
-                    GROUP BY ul.song_id, s.artist_id
-                    ORDER BY play_count DESC
-                    LIMIT 1
-                """, (user_id, start, end), fetchone=True, dict_cursor=True)
-
-                # Update the snapshot insertion
-                run_query("""
                     INSERT INTO user_snapshots (
                         user_id, total_songs_played, 
                         most_played_song_id, most_played_artist_id,
                         longest_binge_song_id, binge_count,
                         binge_start_ts, binge_end_ts,
-                        range_start, range_end, range_type
+                        range_start, range_end, range_type,
+                        snapshot_time
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        UTC_TIMESTAMP()  # Force MySQL to use UTC
                     )
                 """, (
                     user_id, stats["total_songs"],
