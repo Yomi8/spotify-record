@@ -451,7 +451,7 @@ def get_latest_snapshot(period):
     # 2. If we have a snapshot, check if it's fresh enough
     if snapshot:
         # Ensure snapshot_time is parsed as UTC
-        snapshot_time = pendulum.parse(str(snapshot["snapshot_time"])).in_timezone("UTC")
+        snapshot_time = pendulum.instance(snapshot["snapshot_time"], tz="UTC")
         now = pendulum.now("UTC")
 
         age_minutes = now.diff(snapshot_time).in_minutes()
