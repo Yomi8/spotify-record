@@ -455,7 +455,7 @@ def generate_snapshot_for_period(user_id, period):
                         snapshot_time
                     ) VALUES (
                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                        CONVERT_TZ(%s, 'UTC', 'UTC')
+                        %s
                     )
                 """, (
                     user_id, stats["total_songs"],
