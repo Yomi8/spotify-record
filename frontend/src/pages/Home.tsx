@@ -126,12 +126,12 @@ export default function Home() {
                   Snapshot took too long to generate. Please try again later.
                 </div>
               )}
-              
+
               {isAuthenticated && stats && (
                 <div className="row row-cols-1 row-cols-md-2 g-4">
                   {/* Total Plays */}
                   <div className="col">
-                    <div className="card bg-secondary h-100">
+                    <div className="card bg-secondary h-100 text-white">
                       <div className="card-body d-flex flex-column justify-content-center align-items-center text-center">
                         <h5 className="card-title mb-3">Total Plays</h5>
                         <div className="display-4">{stats.total_songs_played}</div>
@@ -141,7 +141,7 @@ export default function Home() {
               
                   {/* Most Played Song */}
                   <div className="col">
-                    <div className="card bg-secondary h-100">
+                    <div className="card bg-secondary h-100 text-white">
                       <div className="card-body d-flex align-items-center">
                         {stats.most_played_song_image_url && (
                           <img
@@ -152,8 +152,14 @@ export default function Home() {
                           />
                         )}
                         <div>
-                          <h5 className="card-title mb-1">{stats.most_played_song}</h5>
-                          <p className="mb-0">{stats.most_played_song_artist}</p>
+                          <h5 className="card-title mb-1">Most Played Song</h5>
+                          <Link
+                            to={`/song/${stats.most_played_song_id}`}
+                            className="text-white text-decoration-none"
+                          >
+                            <p className="fw-bold mb-1">{stats.most_played_song}</p>
+                            <p className="mb-0">{stats.most_played_song_artist}</p>
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -161,7 +167,7 @@ export default function Home() {
                       
                   {/* Most Played Artist */}
                   <div className="col">
-                    <div className="card bg-secondary h-100">
+                    <div className="card bg-secondary h-100 text-white">
                       <div className="card-body d-flex align-items-center">
                         {stats.most_played_artist_image_url && (
                           <img
@@ -171,19 +177,22 @@ export default function Home() {
                             style={{ width: 64, height: 64 }}
                           />
                         )}
-                        <Link
-                          to={`/artist/${stats.most_played_artist_id}`}
-                          className="text-light text-decoration-none"
-                        >
-                          <h5 className="mb-1">{stats.most_played_artist}</h5>
-                        </Link>
+                        <div>
+                          <h5 className="card-title mb-1">Most Played Artist</h5>
+                          <Link
+                            to={`/artist/${stats.most_played_artist_id}`}
+                            className="text-white text-decoration-none"
+                          >
+                            {stats.most_played_artist}
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
                       
                   {/* Longest Binge */}
                   <div className="col">
-                    <div className="card bg-secondary h-100">
+                    <div className="card bg-secondary h-100 text-white">
                       <div className="card-body d-flex align-items-center">
                         {stats.longest_binge_song_image_url && (
                           <img
@@ -194,13 +203,14 @@ export default function Home() {
                           />
                         )}
                         <div>
-                          <h5 className="card-title mb-1">{stats.longest_binge_song}</h5>
+                          <h5 className="card-title mb-1">Longest Binge</h5>
                           <Link
                             to={`/song/${stats.longest_binge_song_id}`}
-                            className="text-light text-decoration-none"
+                            className="text-white text-decoration-none"
                           >
-                            {stats.longest_binge_artist}
+                            {stats.longest_binge_song}
                           </Link>
+                          <p className="mb-0">{stats.longest_binge_artist}</p>
                         </div>
                       </div>
                     </div>
