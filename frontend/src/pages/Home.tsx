@@ -128,7 +128,7 @@ export default function Home() {
               )}
 
               {isAuthenticated && stats && (
-                <div className="row g-4">
+                <div className="row row-cols-1 row-cols-md-2 g-4">
                   {/* Total Plays Section */}
                   <div className="col-md-4">
                     <div className="card bg-secondary h-100">
@@ -141,7 +141,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Most Played Section */}
+                  {/* Most Played Song Section */}
                   <div className="col-md-4">
                     <div className="card bg-secondary h-100">
                       <div className="card-body">
@@ -165,6 +165,30 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Most Played Artist Section */}
+                  <div className="col-md-4">
+                    <div className="card bg-secondary h-100">
+                      <div className="card-body">
+                        <h5 className="card-title mb-3">Most Played Artist</h5>
+                        <div className="d-flex align-items-center">
+                          {stats.most_played_artist_image_url && (
+                            <img 
+                              src={stats.most_played_artist_image_url} 
+                              alt="Top Artist" 
+                              className="rounded me-3"
+                              style={{width: 64, height: 64}} 
+                            />
+                          )}
+                          <Link 
+                            to={`/artist/${stats.most_played_artist_id}`}
+                            className="text-light text-decoration-none"
+                          >
+                            <p className="fw-bold mb-1">{stats.most_played_artist}</p>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
 
                   {/* Longest Binge Section */}
                   <div className="col-md-4">
