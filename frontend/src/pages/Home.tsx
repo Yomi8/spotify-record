@@ -147,23 +147,20 @@ export default function Home() {
                       <div className="card-body">
                         <h5 className="card-title mb-3">Most Played Song</h5>
                         <div className="d-flex align-items-center">
-                          {stats.most_played_song_image_url && (
-                            <img 
-                              src={stats.most_played_song_image_url} 
-                              alt="Top Song" 
-                              className="rounded me-3"
-                              style={{width: 64, height: 64}} 
-                            />
-                          )}
-                          <div>
-                            <p className="fw-bold mb-1">{stats.most_played_song}</p>
-                            <Link 
-                              to={`/song/${stats.most_played_song_id}`}
-                              className="text-light text-decoration-none"
-                            >
-                              {stats.most_played_artist}
-                            </Link>
-                          </div>
+                          <Link to={`/song/${stats.most_played_song_id}`} className="text-light text-decoration-none">
+                            {stats.most_played_song_image_url && (
+                              <img 
+                                src={stats.most_played_song_image_url} 
+                                alt="Top Song" 
+                                className="rounded me-3"
+                                style={{width: 64, height: 64}} 
+                              />
+                            )}
+                            <div>
+                              <p className="fw-bold mb-1">{stats.most_played_song}</p>
+                              {stats.most_played_song_artist}
+                            </div>
+                          </Link>
                         </div>
                       </div>
                     </div>

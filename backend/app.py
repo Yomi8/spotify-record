@@ -287,10 +287,9 @@ def trigger_fetch_recent():
     }), 202
 
 def enrich_snapshot(snapshot):
-    # Most played song and artist
+    # Most played song
     song_name = None
-    artist_name = None
-    image_url = None
+    song_image_url = None
     if snapshot.get("most_played_song_id"):
         song_row = run_query(
             """
@@ -305,12 +304,33 @@ def enrich_snapshot(snapshot):
         )
         if song_row:
             song_name = song_row["track_name"]
-            artist_name = song_row["artist_name"]
-            image_url = song_row["image_url"]
+            song_artist_name = song_row["artist_name"]
+            song_image_url = song_row["image_url"]
 
     snapshot["most_played_song"] = song_name
+    snapshot["most_played_song_artist"] = song_artist_name
+    snapshot["most_played_song_image_url"] = song_image_url
+
+    # Most played artist
+    artist_name = None
+    artist_image_url = None
+    if snapshot.get("most_played_artist_id"):
+        artist_row = run_query(
+            """
+            SELECT artist_name, JSON_UNQUOTE(JSON_EXTRACT(artist_images, '$[0].url')) AS image_url
+            FROM core_artists
+            WHERE artist_id = %s
+            """,
+            (snapshot["most_played_artist_id"],),
+            fetchone=True,
+            dict_cursor=True
+        )
+        if artist_row:
+            artist_name = artist_row["artist_name"]
+            artist_image_url = artist_row["image_url"]
+
     snapshot["most_played_artist"] = artist_name
-    snapshot["most_played_song_image_url"] = image_url
+    snapshot["most_played_artist_image_url"] = artist_image_url
 
     # Binge song
     binge_song_name = None

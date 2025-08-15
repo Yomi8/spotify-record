@@ -361,12 +361,14 @@ def calculate_longest_binge(rows):
     return max_song, max_count, max_start, max_end
 
 def get_snapshot_data(cursor, user_id, start, end):
+    # Get total plays count
     cursor.execute("""
         SELECT COUNT(*) AS total FROM usage_logs
         WHERE user_id = %s AND ts BETWEEN %s AND %s
     """, (user_id, start, end))
     total = cursor.fetchone()['total']
 
+    # Get most played song
     cursor.execute("""
         SELECT song_id, SUM(ms_played) AS total_played
         FROM usage_logs
@@ -376,19 +378,20 @@ def get_snapshot_data(cursor, user_id, start, end):
     row = cursor.fetchone()
     top_song = row['song_id'] if row else None
 
-    # UPDATED: Join core_artists to get artist_name
+    # UPDATED: Get most played artist
     cursor.execute("""
-        SELECT ca.artist_name, SUM(ul.ms_played) AS total_artist_played
+        SELECT ca.artist_id, SUM(ul.ms_played) AS total_artist_played
         FROM usage_logs ul
         JOIN core_songs cs ON ul.song_id = cs.song_id
         JOIN core_artists ca ON cs.artist_id = ca.artist_id
         WHERE ul.user_id = %s AND ul.ts BETWEEN %s AND %s
-        GROUP BY ca.artist_id, ca.artist_name
+        GROUP BY ca.artist_id
         ORDER BY total_artist_played DESC LIMIT 1
     """, (user_id, start, end))
     row = cursor.fetchone()
-    top_artist = row['artist_name'] if row else None
+    top_artist = row['artist_id'] if row else None
 
+    # Get binge data
     cursor.execute("""
         SELECT song_id, ts FROM usage_logs
         WHERE user_id = %s AND ts BETWEEN %s AND %s
@@ -412,7 +415,7 @@ def generate_snapshot_for_period(user_id, period):
     logger.info(f"Starting snapshot generation for user {user_id} period {period}")
     redis_key = f"snapshot_job:{user_id}:{period}"
 
-    now = pendulum.now("UTC")  # Ensure we're using UTC
+    now = pendulum.now("UTC")
 
     try:
         with db_pool.get_connection() as conn:
@@ -425,18 +428,15 @@ def generate_snapshot_for_period(user_id, period):
                 else:
                     start, end = get_range_bounds(now, period)
 
-                # Force to pendulum instances and convert to UTC
                 start = pendulum.instance(start).in_timezone("UTC")
                 end = pendulum.instance(end).in_timezone("UTC")
 
                 stats = get_snapshot_data(cursor, user_id, start, end)
 
-                # Safely convert optional fields if they exist, and force to UTC
                 binge_start_ts = pendulum.instance(stats["binge_start"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_start") else None
                 binge_end_ts = pendulum.instance(stats["binge_end"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_end") else None
 
-                # Update the snapshot insertion to use UTC timestamps
-                most_played = run_query("""
+                run_query("""
                     INSERT INTO user_snapshots (
                         user_id, total_songs_played, 
                         most_played_song_id, most_played_artist_id,
@@ -450,8 +450,8 @@ def generate_snapshot_for_period(user_id, period):
                     )
                 """, (
                     user_id, stats["total_songs"],
-                    most_played["song_id"] if most_played else None,
-                    most_played["artist_id"] if most_played else None,
+                    stats["top_song"],
+                    stats["top_artist"],
                     stats.get("binge_song"),
                     stats.get("binge_count"),
                     binge_start_ts,
@@ -470,7 +470,7 @@ def generate_snapshot_for_period(user_id, period):
     finally:
         redis_conn.delete(redis_key)
         logger.info(f"Snapshot generation complete for user {user_id} period {period}")
- 
+
 # 2. Custom Range Snapshot (API input or manual)
 def generate_snapshot_for_range(user_id, start, end):
     conn = db_pool.get_connection()
