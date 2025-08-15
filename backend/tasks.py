@@ -428,13 +428,10 @@ def generate_snapshot_for_period(user_id, period):
                 else:
                     start, end = get_range_bounds(now, period)
 
+                # Convert all timestamps to UTC explicitly
                 start = pendulum.instance(start).in_timezone("UTC")
                 end = pendulum.instance(end).in_timezone("UTC")
-
-                stats = get_snapshot_data(cursor, user_id, start, end)
-
-                binge_start_ts = pendulum.instance(stats["binge_start"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_start") else None
-                binge_end_ts = pendulum.instance(stats["binge_end"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_end") else None
+                now = pendulum.now("UTC")
 
                 run_query("""
                     INSERT INTO user_snapshots (
@@ -445,8 +442,7 @@ def generate_snapshot_for_period(user_id, period):
                         range_start, range_end, range_type,
                         snapshot_time
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                        UTC_TIMESTAMP()  # Force MySQL to use UTC
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     )
                 """, (
                     user_id, stats["total_songs"],
@@ -458,7 +454,8 @@ def generate_snapshot_for_period(user_id, period):
                     binge_end_ts,
                     start.to_datetime_string(),
                     end.to_datetime_string(),
-                    period
+                    period,
+                    now.to_datetime_string()  # Use explicit UTC timestamp instead of MySQL UTC_TIMESTAMP()
                 ), commit=True)
 
                 logger.info(f"Snapshot generated for user {user_id} ({period}) at {now.to_datetime_string()}")
