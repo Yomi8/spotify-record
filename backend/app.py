@@ -452,6 +452,7 @@ def get_latest_snapshot(period):
     if snapshot:
         snapshot_time = pendulum.parse(str(snapshot["snapshot_time"]))
         age_minutes = now.diff(snapshot_time).in_minutes()
+        print(f"Snapshot age: {age_minutes} minutes", flush=True)
         if age_minutes < 10:  # Snapshot is fresh (less than 10 minutes old)
             redis_conn.delete(redis_key)  # Clear any running job marker
             snapshot = enrich_snapshot(snapshot)
