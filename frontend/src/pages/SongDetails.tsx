@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import backgroundImg from '../assets/images/background.jpg';
+import { Link } from 'react-router-dom';
 
 interface SongDetails {
   song_id: number;
@@ -105,7 +106,9 @@ export default function SongDetails() {
             </div>
             <div className="col-md-8 d-flex flex-column justify-content-center">
               <h1 className="display-4 mb-0 text-light">{song.track_name}</h1>
-              <h2 className="h3 text-light opacity-75">{song.artist_name}</h2>
+              <Link to={`/artist/${song.artist_id}`} className="text-decoration-none text-light">
+                <h2 className="h3 text-light opacity-75">{song.artist_name}</h2>
+              </Link>
             </div>
           </div>
 
