@@ -126,94 +126,81 @@ export default function Home() {
                   Snapshot took too long to generate. Please try again later.
                 </div>
               )}
-
+              
               {isAuthenticated && stats && (
                 <div className="row row-cols-1 row-cols-md-2 g-4">
-                  {/* Total Plays Section */}
-                  <div className="col-md-4">
+                  {/* Total Plays */}
+                  <div className="col">
                     <div className="card bg-secondary h-100">
-                      <div className="card-body">
+                      <div className="card-body d-flex flex-column justify-content-center align-items-center text-center">
                         <h5 className="card-title mb-3">Total Plays</h5>
-                        <div className="d-flex align-items-center">
-                          <div className="display-4 mb-0">{stats.total_songs_played}</div>
+                        <div className="display-4">{stats.total_songs_played}</div>
+                      </div>
+                    </div>
+                  </div>
+              
+                  {/* Most Played Song */}
+                  <div className="col">
+                    <div className="card bg-secondary h-100">
+                      <div className="card-body d-flex align-items-center">
+                        {stats.most_played_song_image_url && (
+                          <img
+                            src={stats.most_played_song_image_url}
+                            alt="Top Song"
+                            className="rounded me-3"
+                            style={{ width: 64, height: 64 }}
+                          />
+                        )}
+                        <div>
+                          <h5 className="card-title mb-1">{stats.most_played_song}</h5>
+                          <p className="mb-0">{stats.most_played_song_artist}</p>
                         </div>
                       </div>
                     </div>
                   </div>
-
-                  {/* Most Played Song Section */}
-                  <div className="col-md-4">
+                      
+                  {/* Most Played Artist */}
+                  <div className="col">
                     <div className="card bg-secondary h-100">
-                      <div className="card-body">
-                        <h5 className="card-title mb-3">Most Played Song</h5>
-                        <div className="d-flex align-items-center">
-                          <Link to={`/song/${stats.most_played_song_id}`} className="text-light text-decoration-none">
-                            {stats.most_played_song_image_url && (
-                              <img 
-                                src={stats.most_played_song_image_url} 
-                                alt="Top Song" 
-                                className="rounded me-3"
-                                style={{width: 64, height: 64}} 
-                              />
-                            )}
-                            <div>
-                              <p className="fw-bold mb-1">{stats.most_played_song}</p>
-                              {stats.most_played_song_artist}
-                            </div>
-                          </Link>
-                        </div>
+                      <div className="card-body d-flex align-items-center">
+                        {stats.most_played_artist_image_url && (
+                          <img
+                            src={stats.most_played_artist_image_url}
+                            alt="Top Artist"
+                            className="rounded me-3"
+                            style={{ width: 64, height: 64 }}
+                          />
+                        )}
+                        <Link
+                          to={`/artist/${stats.most_played_artist_id}`}
+                          className="text-light text-decoration-none"
+                        >
+                          <h5 className="mb-1">{stats.most_played_artist}</h5>
+                        </Link>
                       </div>
                     </div>
                   </div>
-
-                  {/* Most Played Artist Section */}
-                  <div className="col-md-4">
+                      
+                  {/* Longest Binge */}
+                  <div className="col">
                     <div className="card bg-secondary h-100">
-                      <div className="card-body">
-                        <h5 className="card-title mb-3">Most Played Artist</h5>
-                        <div className="d-flex align-items-center">
-                          {stats.most_played_artist_image_url && (
-                            <img 
-                              src={stats.most_played_artist_image_url} 
-                              alt="Top Artist" 
-                              className="rounded me-3"
-                              style={{width: 64, height: 64}} 
-                            />
-                          )}
-                          <Link 
-                            to={`/artist/${stats.most_played_artist_id}`}
+                      <div className="card-body d-flex align-items-center">
+                        {stats.longest_binge_song_image_url && (
+                          <img
+                            src={stats.longest_binge_song_image_url}
+                            alt="Binge Song"
+                            className="rounded me-3"
+                            style={{ width: 64, height: 64 }}
+                          />
+                        )}
+                        <div>
+                          <h5 className="card-title mb-1">{stats.longest_binge_song}</h5>
+                          <Link
+                            to={`/song/${stats.longest_binge_song_id}`}
                             className="text-light text-decoration-none"
                           >
-                            <p className="fw-bold mb-1">{stats.most_played_artist}</p>
+                            {stats.longest_binge_artist}
                           </Link>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Longest Binge Section */}
-                  <div className="col-md-4">
-                    <div className="card bg-secondary h-100">
-                      <div className="card-body">
-                        <h5 className="card-title mb-3">Longest Binge</h5>
-                        <div className="d-flex align-items-center">
-                          {stats.longest_binge_song_image_url && (
-                            <img 
-                              src={stats.longest_binge_song_image_url} 
-                              alt="Binge Song" 
-                              className="rounded me-3"
-                              style={{width: 64, height: 64}} 
-                            />
-                          )}
-                          <div>
-                            <p className="fw-bold mb-1">{stats.longest_binge_song}</p>
-                            <Link 
-                              to={`/song/${stats.longest_binge_song_id}`}
-                              className="text-light text-decoration-none"
-                            >
-                              {stats.longest_binge_artist}
-                            </Link>
-                          </div>
                         </div>
                       </div>
                     </div>
