@@ -145,7 +145,7 @@ export default function Home() {
                       to={`/song/${stats.most_played_song_id}`}
                       className="text-white text-decoration-none"
                     >
-                      <div className="card bg-secondary h-100">
+                      <div className="card bg-secondary h-100 text-white">
                         <div className="card-body d-flex align-items-center">
                           {stats.most_played_song_image_url && (
                             <img
@@ -171,7 +171,7 @@ export default function Home() {
                       to={`/artist/${stats.most_played_artist_id}`}
                       className="text-white text-decoration-none"
                     >
-                      <div className="card bg-secondary h-100">
+                      <div className="card bg-secondary h-100 text-white">
                         <div className="card-body d-flex align-items-center">
                           {stats.most_played_artist_image_url && (
                             <img
@@ -196,7 +196,7 @@ export default function Home() {
                       to={`/song/${stats.longest_binge_song_id}`}
                       className="text-white text-decoration-none"
                     >
-                      <div className="card bg-secondary h-100">
+                      <div className="card bg-secondary h-100 text-white">
                         <div className="card-body d-flex align-items-center">
                           {stats.longest_binge_song_image_url && (
                             <img
