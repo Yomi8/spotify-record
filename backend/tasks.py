@@ -415,7 +415,9 @@ def generate_snapshot_for_period(user_id, period):
     logger.info(f"Starting snapshot generation for user {user_id} period {period}")
     redis_key = f"snapshot_job:{user_id}:{period}"
 
+    # Explicitly set UTC timezone for now
     now = pendulum.now("UTC")
+    logger.info(f"Generation start time (UTC): {now}")
 
     try:
         with db_pool.get_connection() as conn:
@@ -428,14 +430,21 @@ def generate_snapshot_for_period(user_id, period):
                 else:
                     start, end = get_range_bounds(now, period)
 
+                # Ensure all timestamps are in UTC
                 start = pendulum.instance(start).in_timezone("UTC")
                 end = pendulum.instance(end).in_timezone("UTC")
 
                 stats = get_snapshot_data(cursor, user_id, start, end)
 
-                binge_start_ts = pendulum.instance(stats["binge_start"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_start") else None
-                binge_end_ts = pendulum.instance(stats["binge_end"]).in_timezone("UTC").to_datetime_string() if stats.get("binge_end") else None
+                # Convert binge timestamps to UTC
+                binge_start_ts = None
+                binge_end_ts = None
+                if stats.get("binge_start"):
+                    binge_start_ts = pendulum.instance(stats["binge_start"]).in_timezone("UTC").to_datetime_string()
+                if stats.get("binge_end"):
+                    binge_end_ts = pendulum.instance(stats["binge_end"]).in_timezone("UTC").to_datetime_string()
 
+                # Store the snapshot with explicit UTC timestamps
                 run_query("""
                     INSERT INTO user_snapshots (
                         user_id, total_songs_played, 
@@ -445,7 +454,8 @@ def generate_snapshot_for_period(user_id, period):
                         range_start, range_end, range_type,
                         snapshot_time
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                        CONVERT_TZ(%s, 'UTC', 'UTC')
                     )
                 """, (
                     user_id, stats["total_songs"],
@@ -461,7 +471,7 @@ def generate_snapshot_for_period(user_id, period):
                     now.to_datetime_string()
                 ), commit=True)
 
-                logger.info(f"Snapshot generated for user {user_id} ({period}) at {now.to_datetime_string()}")
+                logger.info(f"Snapshot generated for user {user_id} ({period}) at {now.to_datetime_string()} UTC")
 
     except Exception as e:
         logger.error(f"Error generating snapshot for user {user_id} ({period}): {e}")
