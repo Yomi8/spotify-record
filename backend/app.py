@@ -76,6 +76,7 @@ logging.basicConfig(
 
 # RQ config
 app.config['RQ_REDIS_URL'] = 'redis://localhost:6379/0'
+app.config['RQ_DEFAULT_TIMEOUT'] = 1800
 redis_conn = Redis.from_url(app.config['RQ_REDIS_URL'])
 rq = RQ(app)
 
