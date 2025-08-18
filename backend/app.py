@@ -1,18 +1,18 @@
-# Flask package imports
+# --- Flask and Extension Imports ---
 from flask import Flask, request, jsonify, redirect, session
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, verify_jwt_in_request
 from flask_cors import CORS
 from flask_rq2 import RQ
 
-# Worker imports
+# --- Worker/Task Imports ---
 from redis import Redis
 from rq.job import Job
 from tasks import process_spotify_json_file, generate_snapshot_for_period, generate_snapshot_for_range, fetch_recently_played_and_store
 
-# Database imports
+# --- Database Imports ---
 from db import run_query, get_user_id_from_auth0
 
-# Utility imports
+# --- Utility Imports ---
 import sys
 import os
 import json
@@ -23,24 +23,25 @@ from base64 import b64encode
 import urllib.parse
 import logging
 
-# Spotipy imports
+# --- Spotify API Imports ---
 from spotipy import Spotify
 from spotify_auth import save_spotify_tokens, get_spotify_tokens, get_user_spotify_client, client_id, client_secret, redirect_uri
 from spotipy.oauth2 import SpotifyOAuth
 from spotipy.cache_handler import CacheHandler
 
+# --- Constants ---
 SPOTIFY_SCOPES = "user-read-recently-played user-read-email"
 
+# --- Flask App Setup ---
 app = Flask(__name__)
 CORS(app, origins=["https://yomi16.nz", "http://127.0.0.1:3000"], supports_credentials=True)
-
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "73268weyuhyg423uqw9dihefgry5423^&T&&*@(#&EGTY")
 
-# Upload config
+# --- Upload Config ---
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB max
 
-# JWT config
+# --- JWT Config ---
 app.config["JWT_TOKEN_LOCATION"] = ["headers", "query_string"]
 app.config["JWT_ALGORITHM"] = "RS256"
 app.config["JWT_HEADER_NAME"] = "Authorization"
@@ -58,35 +59,37 @@ vwIDAQAB
 -----END PUBLIC KEY-----
 """
 
-# Session config
+# --- Session Config ---
 app.config["SESSION_COOKIE_SECURE"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "None"
 app.config["SESSION_COOKIE_DOMAIN"] = "yomi16.nz"
 
 jwt = JWTManager(app)
 
+# --- Logging Setup ---
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler("app.log"),        # Writes to file
-        logging.StreamHandler()                # Also prints to console
+        logging.FileHandler("app.log"),        # Log to file
+        logging.StreamHandler()                # Log to console
     ]
 )
 
-# RQ config
+# --- Redis Queue Setup ---
 app.config['RQ_REDIS_URL'] = 'redis://localhost:6379/0'
 app.config['RQ_DEFAULT_TIMEOUT'] = 1800
 redis_conn = Redis.from_url(app.config['RQ_REDIS_URL'])
 rq = RQ(app)
 
+# --- Custom Cache Handler for Spotipy (no local cache) ---
 class NoCacheHandler(CacheHandler):
     def get_cached_token(self):
         return None
-    
     def save_token_to_cache(self, token_info):
         pass
 
+# --- Helper: Get Spotipy OAuth object (for login flow) ---
 def get_local_spotify_oauth(scope=SPOTIFY_SCOPES):
     return SpotifyOAuth(
         client_id=client_id,
@@ -94,11 +97,16 @@ def get_local_spotify_oauth(scope=SPOTIFY_SCOPES):
         redirect_uri=redirect_uri,
         scope=scope,
         show_dialog=True,
-        cache_handler=NoCacheHandler()  # Use the custom handler instead of None
+        cache_handler=NoCacheHandler()
     )
 
+# --- Spotify OAuth Login Endpoint ---
 @app.route("/api/spotify/login")
 def spotify_login():
+    """
+    Starts Spotify OAuth flow. Requires a valid JWT (from Auth0).
+    Stores auth0_id in session, then redirects user to Spotify's auth page.
+    """
     token = request.args.get("access_token")
     if not token:
         return {"msg": "Missing token"}, 401
@@ -116,8 +124,13 @@ def spotify_login():
     logging.info("Redirecting user to Spotify auth URL: %s", auth_url)
     return redirect(auth_url)
 
+# --- Spotify OAuth Callback Endpoint ---
 @app.route("/api/spotify/callback")
 def spotify_callback():
+    """
+    Handles Spotify's redirect after user authorizes the app.
+    Exchanges code for tokens, saves them, fetches user profile, and redirects to frontend.
+    """
     code = request.args.get("code")
     logging.info("Spotify callback received with code: %s", code)
     logging.debug("Session contents: %s", dict(session))
@@ -129,6 +142,7 @@ def spotify_callback():
         logging.debug("Spotify token info: %s", json.dumps(token_info, indent=2))
     except Exception as e:
         logging.error("Spotify token exchange error: %s", e)
+        # If refresh token is invalid, clear from DB
         if "invalid_grant" in str(e):
             auth0_id = session.get("auth0_id")
             if auth0_id:
@@ -149,6 +163,7 @@ def spotify_callback():
     refresh_token = token_info.get("refresh_token")
     expires_at = token_info.get("expires_at")
 
+    # If refresh_token is missing, reuse existing one
     if not refresh_token:
         existing_tokens = get_spotify_tokens(user_id)
         logging.debug("Existing tokens for user_id %s: %s", user_id, existing_tokens)
@@ -172,9 +187,13 @@ def spotify_callback():
         logging.error("Failed to save Spotify tokens or fetch profile: %s", e)
         return jsonify({"error": str(e)}), 500
 
+# --- Get Recently Played Tracks (from Spotify API) ---
 @app.route("/api/spotify/recent", methods=["GET"])
 @jwt_required()
 def get_recently_played():
+    """
+    Returns the user's 50 most recent Spotify plays (live from Spotify).
+    """
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id)
     if not user_id:
@@ -192,8 +211,12 @@ def get_recently_played():
         logging.error("Error fetching recently played: %s", e)
         return jsonify({"error": "Failed to fetch data", "details": str(e)}), 500
 
+# --- Database Connection Status Endpoint ---
 @app.route('/api/status', methods=['GET'])
 def db_status():
+    """
+    Simple health check for DB connection.
+    """
     try:
         run_query("SELECT 1")
         return jsonify({"status": "OK", "message": "Database connected"}), 200
@@ -201,8 +224,12 @@ def db_status():
         logging.error("Database connection check failed: %s", e)
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
+# --- Job Status Endpoint (for background jobs) ---
 @app.route("/api/job-status/<job_id>")
 def job_status(job_id):
+    """
+    Returns status/result/error for a background job by job_id.
+    """
     try:
         conn = Redis.from_url(app.config['RQ_REDIS_URL'])
         job = Job.fetch(job_id, connection=conn)
@@ -217,9 +244,12 @@ def job_status(job_id):
         logging.error("Error fetching job status: %s", e)
         return jsonify({"status": "failed", "error": str(e)}), 200
 
-# Sync user data from Auth0
+# --- Sync User Data from Auth0 ---
 @app.route('/api/users/sync', methods=['POST'])
 def sync_user():
+    """
+    Syncs user info from Auth0 to local DB (insert or update).
+    """
     data = request.get_json()
     required_fields = ['auth0_id', 'email']
     if not all(field in data for field in required_fields):
@@ -242,16 +272,18 @@ def sync_user():
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
-# Upload Spotify Extended Listining JSON file
+# --- Upload Spotify Extended Listening JSON File ---
 @app.route('/api/upload-spotify-json', methods=['POST'])
 @jwt_required()
 def upload_spotify_json():
+    """
+    Accepts a Spotify streaming history JSON file upload, saves it, and enqueues a background job to process it.
+    """
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id) 
 
     if not user_id:
         return jsonify({"error": "User not found"}), 404
-
 
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
@@ -270,10 +302,13 @@ def upload_spotify_json():
 
     return jsonify({"status": "queued", "job_id": job.id}), 202
 
-# Call spotify to fetch recently played tracks
+# --- Trigger Fetch of Recent Spotify Plays (background job) ---
 @app.route("/api/spotify/fetch-recent", methods=["POST"])
 @jwt_required()
 def trigger_fetch_recent():
+    """
+    Enqueues a background job to fetch the user's recent Spotify plays and store them in the DB.
+    """
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id)
     if not user_id:
@@ -287,7 +322,11 @@ def trigger_fetch_recent():
         "job_id": job.id
     }), 202
 
+# --- Helper: Enrich snapshot with song/artist details ---
 def enrich_snapshot(snapshot):
+    """
+    Adds song/artist names and images to a snapshot dict, for frontend display.
+    """
     # Most played song
     song_name = None
     song_image_url = None
@@ -362,10 +401,13 @@ def enrich_snapshot(snapshot):
 
     return snapshot
 
-# Generate pre-defined snapshots
+# --- Generate Snapshots for Predefined Periods (background jobs) ---
 @app.route("/api/snapshots/generate", methods=["POST"])
 @jwt_required()
 def generate_snapshots():
+    """
+    Enqueues jobs to generate listening snapshots for given periods (e.g. day, week, month).
+    """
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id)
 
@@ -391,10 +433,13 @@ def generate_snapshots():
 
     return jsonify({"status": "started", "jobs": jobs}), 202
 
-# Generate custom snapshot for a specific date range
+# --- Generate Custom Snapshot for a Date Range ---
 @app.route("/api/snapshots/generate/custom", methods=["POST"])
 @jwt_required()
 def generate_custom_snapshot():
+    """
+    Enqueues a job to generate a snapshot for a custom date range.
+    """
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id)
 
@@ -418,9 +463,14 @@ def generate_custom_snapshot():
     job = queue.enqueue(generate_snapshot_for_range, user_id, start_dt, end_dt)
     return jsonify({"status": "started", "job_id": job.id}), 202
 
+# --- Get Latest Snapshot for a Period (auto-triggers job if stale) ---
 @app.route('/api/snapshots/<period>/latest', methods=['GET'])
 @jwt_required()
 def get_latest_snapshot(period):
+    """
+    Returns the latest snapshot for a period (e.g. day, week).
+    If snapshot is stale, triggers a new background job.
+    """
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id)
 
@@ -479,8 +529,12 @@ def get_latest_snapshot(period):
         "job_id": job.id
     }), 202
 
+# --- Search Songs and Artists ---
 @app.route('/api/search', methods=['GET'])
 def search_songs_artists():
+    """
+    Searches for songs and artists by name.
+    """
     query = request.args.get('q', '').strip()
     if not query:
         return jsonify({"error": "Missing search query"}), 400
@@ -518,9 +572,12 @@ def search_songs_artists():
         "artists": artists
     }), 200
 
-
+# --- Get Song Details (with stats) ---
 @app.route('/api/song/<song_id>', methods=['GET'])
 def get_song_details(song_id):
+    """
+    Returns detailed info and stats for a song.
+    """
     # Get song info with extended details
     song = run_query("""
         SELECT 
@@ -585,8 +642,12 @@ def get_song_details(song_id):
 
     return jsonify(song), 200
 
+# --- Get Artist Details (with stats) ---
 @app.route('/api/artist/<int:artist_id>', methods=['GET'])
 def get_artist_details(artist_id):
+    """
+    Returns detailed info and stats for an artist.
+    """
     artist = run_query("""
         SELECT
             artist_id,
@@ -619,15 +680,18 @@ def get_artist_details(artist_id):
 
     return jsonify(artist_data), 200
 
+# --- Get Top Songs for User (optionally by date range) ---
 @app.route('/api/lists/songs', methods=['GET'])
 @jwt_required()
 def get_top_songs():
+    """
+    Returns user's most played songs, optionally filtered by date range.
+    """
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id)
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
-    # Parse query parameters
     start = request.args.get("start")
     end = request.args.get("end")
     try:
@@ -635,7 +699,6 @@ def get_top_songs():
     except ValueError:
         return jsonify({"error": "Invalid limit"}), 400
 
-    # Build WHERE clause
     filters = ["ul.user_id = %s"]
     params = [user_id]
 
@@ -668,15 +731,18 @@ def get_top_songs():
     songs = run_query(query, tuple(params), dict_cursor=True)
     return jsonify({"songs": songs}), 200
 
+# --- Get Top Artists for User (optionally by date range) ---
 @app.route('/api/lists/artists', methods=['GET'])
 @jwt_required()
 def get_top_artists():
+    """
+    Returns user's most played artists, optionally filtered by date range.
+    """
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id)
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
-    # Parse query parameters
     start = request.args.get("start")
     end = request.args.get("end")
     try:
@@ -684,7 +750,6 @@ def get_top_artists():
     except ValueError:
         return jsonify({"error": "Invalid limit"}), 400
 
-    # Build WHERE clause
     filters = ["ul.user_id = %s"]
     params = [user_id]
 
@@ -715,9 +780,13 @@ def get_top_artists():
     artists = run_query(query, tuple(params), dict_cursor=True)
     return jsonify({"artists": artists}), 200
 
+# --- Get Top Songs by Artist for User ---
 @app.route('/api/artist/<int:artist_id>/songs', methods=['GET'])
 @jwt_required()
 def get_top_songs_by_artist(artist_id):
+    """
+    Returns user's most played songs for a specific artist.
+    """
     auth0_id = get_jwt_identity()
     user_id = get_user_id_from_auth0(auth0_id)
     if not user_id:
@@ -754,5 +823,6 @@ def get_top_songs_by_artist(artist_id):
 
     return jsonify({"songs": songs}), 200
 
+# --- Main Entrypoint ---
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

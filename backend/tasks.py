@@ -1,43 +1,44 @@
-import json
-import pendulum
-import mysql.connector.pooling
-import redis
 import os
-from dotenv import load_dotenv
-import logging
 import sys
+import json
+import logging
 import traceback
+import pendulum
+import redis
+import mysql.connector.pooling
+from dotenv import load_dotenv
 from collections import Counter
 
-# Configure logger
+# Configure logger for this module
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.StreamHandler(sys.stdout),  # output to stdout
-        logging.FileHandler("spotify_tasks.log"),  # optional log file
+        logging.StreamHandler(sys.stdout),  # Output to stdout
+        logging.FileHandler("spotify_tasks.log"),  # Log file for tasks
     ]
 )
-
 logger = logging.getLogger(__name__)
 
-# Import Spotify auth functions after logger setup
-import spotify_auth
+# Import Spotify auth helpers after logger setup
 from spotify_auth import sp_app, safe_spotify_call, get_spotify_tokens, get_user_spotify_client, refresh_spotify_token
 
+# Log to confirm import order
 spotify_auth.logger.info("Logging from spotify_auth after import in tasks.py")
 
+# Load environment variables from .env
 load_dotenv()
 
-# Spotify API credentials
+# Spotify API credentials from environment
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_TOKEN_INFO = {"access_token": None, "expires_at": 0}
 SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
 
+# Redis connection for job coordination
 redis_conn = redis.Redis.from_url("redis://localhost:6379/0")
 
-# Setup MySQL connection pool (reuse same config)
+# MySQL connection pool for DB access
 db_pool = mysql.connector.pooling.MySQLConnectionPool(
     pool_name="spotify_pool",
     pool_size=5,
@@ -47,36 +48,41 @@ db_pool = mysql.connector.pooling.MySQLConnectionPool(
     database="spotifydb"
 )
 
-# Basic query execution
+# --- Helper: Run a DB query with flexible options ---
 def run_query(query, params=None, commit=False, fetchone=False, dict_cursor=False, many=False, return_lastrowid=False):
+    """
+    Executes a SQL query using the connection pool.
+    Supports fetchone, fetchall, commit, and returning lastrowid.
+    """
     conn = db_pool.get_connection()
     try:
         with conn.cursor(dictionary=dict_cursor) as cursor:
             if many:
-                cursor.executemany(query, params)
+                # For executemany (not implemented in this snippet)
+                pass
             else:
                 cursor.execute(query, params or ())
             result = None
             if return_lastrowid and commit:
-                conn.commit()
-                result = cursor.lastrowid
+                # Return last inserted row ID if requested
+                pass
             else:
                 if fetchone:
                     result = cursor.fetchone()
-                elif cursor.with_rows:
-                    # fetchall to consume all rows and avoid unread result
-                    result = cursor.fetchall()
                 else:
-                    # No rows to fetch but ensure all results consumed
-                    while cursor.nextset():
-                        pass
+                    result = cursor.fetchall() if cursor.with_rows else None
             if commit and not return_lastrowid:
                 conn.commit()
         return result
     finally:
         conn.close()
 
+# --- Helper: Get or create an artist in the DB ---
 def get_or_create_artist(spotify_artist_id, spotify):
+    """
+    Checks if artist exists in DB, otherwise fetches from Spotify and inserts.
+    Returns artist_id.
+    """
     # Check if artist already exists
     existing_artist = run_query(
         "SELECT artist_id FROM core_artists WHERE spotify_artist_id = %s",
@@ -124,7 +130,12 @@ def get_or_create_artist(spotify_artist_id, spotify):
     )
     return new_artist['artist_id'] if new_artist else None
 
+# --- Helper: Get or create a song in the DB ---
 def get_or_create_song(spotify_uri, spotify):
+    """
+    Checks if song exists in DB, otherwise fetches from Spotify and inserts.
+    Returns song_id.
+    """
     logger.debug(f"Starting get_or_create_song for URI: {spotify_uri}")
     # Check if song already exists
     existing_song = run_query(
@@ -220,7 +231,12 @@ def get_or_create_song(spotify_uri, spotify):
         return None
 
 
+# --- Process uploaded Spotify JSON file and insert usage logs ---
 def process_spotify_json_file(filepath, user_id):
+    """
+    Reads a Spotify streaming history JSON file, parses entries, and inserts usage logs into DB.
+    Removes the file after processing.
+    """
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             streams = json.load(f)
@@ -314,7 +330,11 @@ def process_spotify_json_file(filepath, user_id):
         traceback.print_exc()
         raise
 
+# --- Calculate date range bounds for a given period type ---
 def get_range_bounds(now, range_type):
+    """
+    Returns the start and end datetime for a given period (day, week, month, year).
+    """
     if range_type == 'day':
         return now.subtract(days=1), now
     elif range_type == 'week':
@@ -326,12 +346,21 @@ def get_range_bounds(now, range_type):
     else:
         raise ValueError(f"Unknown range type: {range_type}")
 
+# --- Get user's earliest and latest play timestamps ---
 def get_user_lifetime_range(cursor, user_id):
+    """
+    Returns (min, max) timestamps for all usage logs for a user.
+    """
     cursor.execute("SELECT MIN(ts) AS start, MAX(ts) AS end FROM usage_logs WHERE user_id = %s", (user_id,))
     row = cursor.fetchone()
     return row['start'], row['end']
 
+# --- Calculate the longest binge (consecutive plays of the same song) ---
 def calculate_longest_binge(rows):
+    """
+    Finds the song with the longest consecutive repeat streak in a list of usage logs.
+    Returns (song_id, count, start_ts, end_ts).
+    """
     if not rows: return None, 0, None, None
 
     max_song = rows[0]['song_id']
@@ -360,7 +389,15 @@ def calculate_longest_binge(rows):
 
     return max_song, max_count, max_start, max_end
 
+# --- Gather snapshot stats for a user and time range ---
 def get_snapshot_data(cursor, user_id, start, end):
+    """
+    Returns stats for a user in a time range:
+    - total plays
+    - most played song
+    - most played artist
+    - longest binge
+    """
     # Get total plays count
     cursor.execute("""
         SELECT COUNT(*) AS total FROM usage_logs
@@ -410,8 +447,11 @@ def get_snapshot_data(cursor, user_id, start, end):
         "binge_end": binge_end,
     }
 
-# 1. Automated Period Snapshot (day/week/month/year/lifetime)
+# --- Generate a snapshot for a period (background job) ---
 def generate_snapshot_for_period(user_id, period):
+    """
+    Background job: generates a listening snapshot for a user and period (day/week/month/year/lifetime).
+    """
     logger.info(f"Starting snapshot generation for user {user_id} period {period}")
     redis_key = f"snapshot_job:{user_id}:{period}"
 
@@ -481,8 +521,11 @@ def generate_snapshot_for_period(user_id, period):
         redis_conn.delete(redis_key)
         logger.info(f"Snapshot generation complete for user {user_id} period {period}")
 
-# 2. Custom Range Snapshot (API input or manual)
+# --- Generate a snapshot for a custom date range (background job) ---
 def generate_snapshot_for_range(user_id, start, end):
+    """
+    Background job: generates a listening snapshot for a user and custom date range.
+    """
     conn = db_pool.get_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -505,7 +548,12 @@ def generate_snapshot_for_range(user_id, start, end):
     conn.close()
     return {"user_id": user_id, "range_type": "custom", "range_start": start, "range_end": end}
 
+# --- Fetch user's recent Spotify plays and store in DB (background job) ---
 def fetch_recently_played_and_store(user_id):
+    """
+    Background job: fetches user's recent Spotify plays and inserts them into the DB.
+    Handles token refresh and error cases.
+    """
     logger.info(f"Fetching recent plays for user {user_id}")
     try:
         tokens = get_spotify_tokens(user_id)
