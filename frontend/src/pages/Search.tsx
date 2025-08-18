@@ -1,20 +1,42 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import backgroundImg from '../assets/images/background.jpg';
 
 export default function Search() {
-  const [query, setQuery] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Read query param from URL
+  const params = new URLSearchParams(location.search);
+  const initialQuery = params.get("q") || "";
+
+  const [query, setQuery] = useState(initialQuery);
   const [songResults, setSongResults] = useState<any[]>([]);
   const [artistResults, setArtistResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Auto-search if query param is present
+  useEffect(() => {
+    if (initialQuery) {
+      handleSearch(undefined, initialQuery);
+    }
+    // eslint-disable-next-line
+  }, [initialQuery]);
+
+  // Modified handleSearch to accept optional query
+  const handleSearch = async (
+    e?: React.FormEvent,
+    q?: string
+  ) => {
+    if (e) e.preventDefault();
+    const searchTerm = typeof q === "string" ? q : query;
+    if (!searchTerm.trim()) return;
     setLoading(true);
-    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    // Update URL
+    navigate(`/search?q=${encodeURIComponent(searchTerm)}`, { replace: true });
+    const res = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`);
     const data = await res.json();
     setSongResults(data.songs || []);
     setArtistResults(data.artists || []);
