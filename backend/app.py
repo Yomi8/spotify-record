@@ -595,7 +595,7 @@ def get_artist_details(artist_id):
             artist_followers,
             artist_popularity,
             JSON_UNQUOTE(JSON_EXTRACT(artist_images, '$[0].url')) AS image_url,
-            genres,
+            artist_genres,
             (
                 SELECT COUNT(*) FROM usage_logs ul
                 JOIN core_songs cs ON ul.song_id = cs.song_id
@@ -609,10 +609,8 @@ def get_artist_details(artist_id):
         return jsonify({"error": "Artist not found"}), 404
 
     artist_data = artist[0]
-    # Parse genres JSON, fallback to ["Unknown"] if missing/empty
-    import json
     try:
-        genres = json.loads(artist_data.get("genres") or "[]")
+        genres = json.loads(artist_data.get("artist_genres") or "[]")
         if not genres:
             genres = ["Unknown"]
     except Exception:
