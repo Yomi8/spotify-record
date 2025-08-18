@@ -183,7 +183,7 @@ export default function ArtistDetails() {
                   <ul className="list-group list-group-flush">
                     {songs.map((song) => (
                       <li key={song.song_id} className="list-group-item bg-dark text-light d-flex justify-content-between align-items-center">
-                        <Link to={`/song/${song.song_id}`}><span>{song.track_name}</span></Link>
+                        <Link to={`/song/${song.song_id}`} className="text-white text-decoration-none"><span>{song.track_name}</span></Link>
                         <span className="badge bg-success">{song.play_count}</span>
                       </li>
                     ))}
