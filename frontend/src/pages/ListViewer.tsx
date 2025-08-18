@@ -17,6 +17,7 @@ type Song = {
 
 type Artist = {
   artist_name: string;
+  artist_id: string;
   image_url?: string;
   play_count: number;
 };
@@ -164,7 +165,7 @@ export default function ListViewer() {
           <tr key={artist.artist_name}>
             <td>{idx + 1}</td>
             <td>
-              <Link to={`/artist/${encodeURIComponent(artist.artist_name)}`} className="text-white text-decoration-none">
+              <Link to={`/artist/${artist.artist_id}`} className="text-white text-decoration-none">
                 {artist.artist_name}
               </Link>
             </td>
