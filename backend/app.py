@@ -643,6 +643,7 @@ def get_top_songs():
             s.song_id,
             s.track_name,
             a.artist_name,
+            s.artist_id,
             s.image_url,
             COUNT(ul.usage_id) AS play_count
         FROM usage_logs ul

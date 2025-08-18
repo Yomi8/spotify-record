@@ -4,10 +4,12 @@ import axios from "axios";
 import backgroundImg from "../assets/images/background.jpg";
 import { useAuth0 } from "@auth0/auth0-react";
 import dayjs from "dayjs";
+import { Link } from "react-router-dom";
 
 type Song = {
   song_id: string;
   track_name: string;
+  artist_id: string;
   artist_name: string;
   image_url?: string;
   play_count: number;
@@ -131,8 +133,8 @@ export default function ListViewer() {
         {songsList.map((song, idx) => (
           <tr key={song.song_id}>
             <td>{idx + 1}</td>
-            <td>{song.track_name}</td>
-            <td>{song.artist_name}</td>
+            <Link to={`/song/${song.song_id}`} className="text-white text-decoration-none"><td>{song.track_name}</td></Link>
+            <Link to={`/artist/${song.artist_id}`} className="text-white text-decoration-none"><td>{song.artist_name}</td></Link>
             <td>{song.play_count}</td>
           </tr>
         ))}
