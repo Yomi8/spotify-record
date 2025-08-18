@@ -185,18 +185,35 @@ export default function ArtistDetails() {
                 <div className="card-header bg-dark border-secondary">
                   <h3 className="h5 mb-0 text-light">Your Top 10 Songs</h3>
                 </div>
-                <div className="card-body text-light">
-                  <ul className="list-group list-group-flush">
-                    {songs.slice(0, 10).map((song) => (
-                      <li key={song.song_id} className="list-group-item bg-dark text-light d-flex justify-content-between align-items-center">
-                        <Link to={`/song/${song.song_id}`} className="text-white text-decoration-none"><span>{song.track_name}</span></Link>
-                        <span className="badge bg-success">{song.play_count}</span>
-                      </li>
-                    ))}
-                    {songs.length === 0 && (
-                      <li className="list-group-item bg-dark text-light">No songs found.</li>
-                    )}
-                  </ul>
+                <div className="card-body text-light p-0">
+                  {songs.length === 0 ? (
+                    <div className="p-3">No songs found.</div>
+                  ) : (
+                    <table className="table table-dark table-striped table-hover mb-0">
+                      <thead>
+                        <tr>
+                          <th style={{width: '2.5rem'}}>#</th>
+                          <th>Track Name</th>
+                          <th style={{whiteSpace: 'nowrap'}}>Play Count</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {songs.slice(0, 10).map((song, idx) => (
+                          <tr key={song.song_id}>
+                            <td>{idx + 1}</td>
+                            <td>
+                              <Link to={`/song/${song.song_id}`} className="text-white text-decoration-none">
+                                {song.track_name}
+                              </Link>
+                            </td>
+                            <td>
+                              <span className="badge bg-success">{song.play_count}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             </div>
