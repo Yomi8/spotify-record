@@ -52,7 +52,8 @@ export default function ArtistDetails() {
           return;
         }
 
-        const songsRes = await fetch(`/api/artist/${artistId}/songs?limit=10`, {
+        // Fetch ALL songs for this artist (remove limit or set to a very high number)
+        const songsRes = await fetch(`/api/artist/${artistId}/songs?limit=10000`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -186,7 +187,7 @@ export default function ArtistDetails() {
                 </div>
                 <div className="card-body text-light">
                   <ul className="list-group list-group-flush">
-                    {songs.map((song) => (
+                    {songs.slice(0, 10).map((song) => (
                       <li key={song.song_id} className="list-group-item bg-dark text-light d-flex justify-content-between align-items-center">
                         <Link to={`/song/${song.song_id}`} className="text-white text-decoration-none"><span>{song.track_name}</span></Link>
                         <span className="badge bg-success">{song.play_count}</span>
