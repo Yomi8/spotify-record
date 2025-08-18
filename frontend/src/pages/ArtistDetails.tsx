@@ -1,8 +1,7 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import backgroundImg from '../assets/images/background.jpg';
 import { useAuth0 } from "@auth0/auth0-react";
-import { Link } from 'react-router-dom';
 
 interface ArtistDetailsType {
   artist_id: number;
@@ -33,6 +32,7 @@ export default function ArtistDetails() {
   const [artist, setArtist] = useState<ArtistDetailsType | null>(null);
   const [songs, setSongs] = useState<ArtistSong[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -199,12 +199,14 @@ export default function ArtistDetails() {
                       </thead>
                       <tbody>
                         {songs.slice(0, 10).map((song, idx) => (
-                          <tr key={song.song_id}>
-                            <Link to={`/song/${song.song_id}`} className="text-white text-decoration-none">
+                          <tr
+                            key={song.song_id}
+                            style={{ cursor: "pointer" }}
+                            onClick={() => navigate(`/song/${song.song_id}`)}
+                          >
                             <td>{idx + 1}</td>
                             <td>{song.track_name}</td>
                             <td>{song.play_count}</td>
-                            </Link>
                           </tr>
                         ))}
                       </tbody>
