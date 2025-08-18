@@ -133,8 +133,16 @@ export default function ListViewer() {
         {songsList.map((song, idx) => (
           <tr key={song.song_id}>
             <td>{idx + 1}</td>
-            <Link to={`/song/${song.song_id}`} className="text-white text-decoration-none"><td>{song.track_name}</td></Link>
-            <Link to={`/artist/${song.artist_id}`} className="text-white text-decoration-none"><td>{song.artist_name}</td></Link>
+            <td>
+              <Link to={`/song/${song.song_id}`} className="text-white text-decoration-none">
+                {song.track_name}
+              </Link>
+            </td>
+            <td>
+              <Link to={`/artist/${song.artist_id}`} className="text-white text-decoration-none">
+                {song.artist_name}
+              </Link>
+            </td>
             <td>{song.play_count}</td>
           </tr>
         ))}
@@ -155,7 +163,11 @@ export default function ListViewer() {
         {artistsList.map((artist, idx) => (
           <tr key={artist.artist_name}>
             <td>{idx + 1}</td>
-            <td>{artist.artist_name}</td>
+            <td>
+              <Link to={`/artist/${encodeURIComponent(artist.artist_name)}`} className="text-white text-decoration-none">
+                {artist.artist_name}
+              </Link>
+            </td>
             <td>{artist.play_count}</td>
           </tr>
         ))}
