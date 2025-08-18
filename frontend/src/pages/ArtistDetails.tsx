@@ -80,10 +80,15 @@ export default function ArtistDetails() {
         const firstPlayed = dates.length > 0 ? new Date(Math.min(...dates.map(d => d.getTime()))) : null;
         const lastPlayed = dates.length > 0 ? new Date(Math.max(...dates.map(d => d.getTime()))) : null;
 
+        // Count unique song IDs
+        const uniqueSongIds = new Set(songList.map(song => song.song_id));
+        const songCount = uniqueSongIds.size;
+
         setArtist({
           ...artistData,
           first_played: firstPlayed?.toISOString() ?? "",
           last_played: lastPlayed?.toISOString() ?? "",
+          song_count: songCount,
         });
       } catch (err: any) {
         setError(err.message || "Failed to fetch artist data");
