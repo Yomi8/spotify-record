@@ -134,7 +134,7 @@ export default function ArtistDetails() {
                   <p><strong>Followers:</strong> {artist.artist_followers.toLocaleString()}</p>
                   <p><strong>Popularity:</strong> {artist.artist_popularity}</p>
                   {artist.genres && artist.genres.length > 0 && (
-                    <p><strong>Genres:</strong> {artist.genres.join(', ')}</p>
+                    <p><strong>Genres:</strong> {artist.genres?.join(', ')}</p>
                   )}
                   <a href={`https://open.spotify.com/artist/${artist.spotify_uri.split(':')[2]}`} className="btn btn-success w-100">
                     <i className="bi bi-spotify me-2"></i>
