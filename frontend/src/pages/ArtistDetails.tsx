@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import backgroundImg from '../assets/images/background.jpg';
 import { useAuth0 } from "@auth0/auth0-react";
+import { Link } from 'react-router-dom';
 
 interface ArtistDetailsType {
   artist_id: number;
@@ -182,7 +183,7 @@ export default function ArtistDetails() {
                   <ul className="list-group list-group-flush">
                     {songs.map((song) => (
                       <li key={song.song_id} className="list-group-item bg-dark text-light d-flex justify-content-between align-items-center">
-                        <span>{song.track_name}</span>
+                        <Link to={`/song/${song.song_id}`}><span>{song.track_name}</span></Link>
                         <span className="badge bg-success">{song.play_count}</span>
                       </li>
                     ))}
