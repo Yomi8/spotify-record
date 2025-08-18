@@ -100,7 +100,7 @@ export default function SongDetails() {
             style={{ zIndex: 10 }}
             onClick={() => navigate(-1)}
           >
-            <i class="bi bi-arrow-left"></i> Back
+            <i className="bi bi-arrow-left"></i> Back
           </button>
 
           <div className="row mb-4">
