@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import backgroundImg from '../assets/images/background.jpg';
 import { Link } from 'react-router-dom';
@@ -38,6 +38,7 @@ export default function SongDetails() {
   const { songId } = useParams();
   const [song, setSong] = useState<SongDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`/api/song/${songId}`)
@@ -92,7 +93,16 @@ export default function SongDetails() {
           maxWidth: '1100px',
         }}
       >
-        <div className="card bg-dark text-white shadow rounded-4 p-4">
+        <div className="card bg-dark text-white shadow rounded-4 p-4" style={{ position: 'relative' }}>
+          {/* Back button in top left */}
+          <button
+            className="btn btn-outline-light position-absolute top-0 start-0 m-3"
+            style={{ zIndex: 10 }}
+            onClick={() => navigate(-1)}
+          >
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+
           <div className="row mb-4">
             <div className="col-md-auto">
               <div style={{ width: '300px', height: '300px', maxWidth: '100%', position: 'relative' }}>
