@@ -8,8 +8,10 @@ import time
 from db import run_query
 import logging
 
+# Load environment variables
 load_dotenv()
 
+# Spotify API credentials
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
@@ -19,12 +21,15 @@ if not client_id or not client_secret:
 
 logger = logging.getLogger(__name__)
 
-# Used for app-level Spotify metadata lookups (e.g., song info)
+# App-level Spotify client for metadata lookups
 app_auth_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 sp_app = Spotify(auth_manager=app_auth_manager)
 
-
+# --- Retry wrapper for Spotify API calls ---
 def safe_spotify_call(func, *args, max_retries=5, delay=1, **kwargs):
+    """
+    Calls a Spotify API function with retries for rate limits and transient errors.
+    """
     logger.info("safe_spotify_call called")
     for attempt in range(max_retries):
         try:
@@ -44,7 +49,11 @@ def safe_spotify_call(func, *args, max_retries=5, delay=1, **kwargs):
             time.sleep(delay * (2 ** attempt))
     raise Exception("Max retries exceeded for Spotify API call")
 
+# --- Save Spotify tokens for a user in DB ---
 def save_spotify_tokens(user_id, access_token, refresh_token, expires_at):
+    """
+    Inserts or updates Spotify tokens for a user in the DB.
+    """
     query = """
         INSERT INTO spotify_tokens (user_id, access_token, refresh_token, expires_at)
         VALUES (%s, %s, %s, %s)
@@ -55,11 +64,19 @@ def save_spotify_tokens(user_id, access_token, refresh_token, expires_at):
     """
     run_query(query, (user_id, access_token, refresh_token, expires_at), commit=True)
 
+# --- Get Spotify tokens for a user from DB ---
 def get_spotify_tokens(user_id):
+    """
+    Returns access_token, refresh_token, and expires_at for a user.
+    """
     query = "SELECT access_token, refresh_token, expires_at FROM spotify_tokens WHERE user_id = %s"
     return run_query(query, (user_id,), fetchone=True, dict_cursor=True)
 
+# --- Refresh a Spotify access token using a refresh token ---
 def refresh_spotify_token(refresh_token):
+    """
+    Requests a new access token from Spotify using a refresh token.
+    """
     response = requests.post("https://accounts.spotify.com/api/token", data={
         "grant_type": "refresh_token",
         "refresh_token": refresh_token,
@@ -72,7 +89,11 @@ def refresh_spotify_token(refresh_token):
     else:
         raise Exception("Failed to refresh Spotify token")
 
+# --- Get a Spotipy client for a user by Auth0 ID (refreshes token if needed) ---
 def get_user_spotify(auth0_id: str) -> Spotify:
+    """
+    Returns a Spotipy client for a user, refreshing token if expired.
+    """
     user = run_query("SELECT id FROM core_users WHERE auth0_id = %s", (auth0_id,), fetchone=True, dict_cursor=True)
     if not user:
         raise Exception("User not found")
@@ -97,6 +118,9 @@ def get_user_spotify(auth0_id: str) -> Spotify:
 
     return Spotify(auth=access_token)
 
-# Optional helper to get a Spotify client for a specific access token
+# --- Get a Spotipy client for a specific access token ---
 def get_user_spotify_client(access_token: str) -> Spotify:
+    """
+    Returns a Spotipy client for a given access token.
+    """
     return Spotify(auth=access_token)
