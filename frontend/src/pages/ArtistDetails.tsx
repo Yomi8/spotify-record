@@ -51,7 +51,7 @@ export default function ArtistDetails() {
           return;
         }
 
-        const songsRes = await fetch(`/api/artist/${artistId}/songs?limit=100`, {
+        const songsRes = await fetch(`/api/artist/${artistId}/songs?limit=10`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
