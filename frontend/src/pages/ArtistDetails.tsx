@@ -136,12 +136,8 @@ export default function ArtistDetails() {
                   {artist.genres && artist.genres.length > 0 && (
                     <p><strong>Genres:</strong> {artist.genres.join(', ')}</p>
                   )}
-                  <a
-                    href={`https://open.spotify.com/artist/${artist.spotify_uri.split(':')[2]}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn btn-success mt-2"
-                  >
+                  <a href={`https://open.spotify.com/artist/${artist.spotify_uri.split(':')[2]}`} className="btn btn-success w-100">
+                    <i className="bi bi-spotify me-2"></i>
                     Open in Spotify
                   </a>
                 </div>
@@ -193,7 +189,7 @@ export default function ArtistDetails() {
                       <thead>
                         <tr>
                           <th style={{width: '2.5rem'}}>#</th>
-                          <th>Track Name</th>
+                          <th>Song</th>
                           <th>Plays</th>
                         </tr>
                       </thead>
