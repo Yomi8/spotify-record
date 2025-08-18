@@ -21,6 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import Spotify auth helpers after logger setup
+import spotify_auth
 from spotify_auth import sp_app, safe_spotify_call, get_spotify_tokens, get_user_spotify_client, refresh_spotify_token
 
 # Log to confirm import order
