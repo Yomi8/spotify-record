@@ -194,21 +194,17 @@ export default function ArtistDetails() {
                         <tr>
                           <th style={{width: '2.5rem'}}>#</th>
                           <th>Track Name</th>
-                          <th style={{whiteSpace: 'nowrap'}}>Play Count</th>
+                          <th>Plays</th>
                         </tr>
                       </thead>
                       <tbody>
                         {songs.slice(0, 10).map((song, idx) => (
                           <tr key={song.song_id}>
+                            <Link to={`/song/${song.song_id}`} className="text-white text-decoration-none">
                             <td>{idx + 1}</td>
-                            <td>
-                              <Link to={`/song/${song.song_id}`} className="text-white text-decoration-none">
-                                {song.track_name}
-                              </Link>
-                            </td>
-                            <td>
-                              <span className="badge bg-success">{song.play_count}</span>
-                            </td>
+                            <td>{song.track_name}</td>
+                            <td>{song.play_count}</td>
+                            </Link>
                           </tr>
                         ))}
                       </tbody>
