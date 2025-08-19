@@ -93,7 +93,7 @@ export default function Search() {
               <button
                 className="btn btn-outline-light mb-3"
                 style={{
-                  width: "75px",
+                  width: "85px",
                   textAlign: "left",
                   display: "block",
                   marginLeft: 0,
@@ -102,7 +102,7 @@ export default function Search() {
               >
                 <i className="bi bi-arrow-left"></i> Back
               </button>
-              <p className="text-center text-light-50 mb-4">Click on a result to view more details</p>
+              <p className="text-center text-light-50 my-3">Click on a result to view more details</p>
 
               <form onSubmit={handleSearch}>
                 <div className="input-group position-relative" style={{ padding: '10px' }}>
