@@ -70,7 +70,7 @@ export default function Lists() {
               <button
                 className="btn btn-outline-light mb-3"
                 style={{
-                  width: "75px",
+                  width: "85px",
                   textAlign: "left",
                 }}
                 onClick={() => navigate(-1)}
