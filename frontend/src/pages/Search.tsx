@@ -91,7 +91,7 @@ export default function Search() {
             <div className="card bg-dark text-white shadow p-4 mb-4">
               {/* Back button inside the card, above content */}
               <button
-                className="btn btn-outline-light mb-3"
+                className="btn btn-outline-light my-2"
                 style={{
                   width: "85px",
                   textAlign: "left",
