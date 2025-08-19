@@ -95,7 +95,7 @@ export default function Search() {
                 style={{
                   width: "85px",
                   textAlign: "left",
-                  display: "block",
+                  position: "absolute",
                   marginLeft: 0,
                 }}
                 onClick={() => navigate(-1)}
