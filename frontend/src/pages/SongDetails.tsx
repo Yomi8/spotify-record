@@ -97,7 +97,7 @@ export default function SongDetails() {
           {/* Back button above card content */}
           <button
             className="btn btn-outline-light mb-3"
-            style={{ width: "80px", display: "block", textAlign: "left" }}
+            style={{ width: "85px", display: "block", textAlign: "left" }}
             onClick={() => navigate(-1)}
           >
             <i className="bi bi-arrow-left"></i> Back
