@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import SongDetails from './pages/SongDetails';
 import ArtistDetails from './pages/ArtistDetails';
 import Help from './pages/Help';
+import Acknowledgements from './pages/Acknowledgements';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/artist/:artistId" element={<ArtistDetails />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/acknowledgements" element={<Acknowledgements />} />
         </Routes>
       </div>
       <Footer />

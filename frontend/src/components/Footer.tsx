@@ -15,7 +15,7 @@ export default function Footer() {
       }}
     >
       <div className="d-flex align-items-center gap-4">
-        <Link to="/acknoledgements" className="nav-link text-white">
+        <Link to="/acknowledgements" className="nav-link text-white">
           <i className="bi bi-paperclip"></i> Acknowledgements
         </Link>
         <Link to="/help" className="nav-link text-white">
