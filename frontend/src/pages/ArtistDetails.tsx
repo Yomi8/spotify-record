@@ -109,6 +109,15 @@ export default function ArtistDetails() {
 
       <div className="container" style={{ position: 'relative', zIndex: 2, maxWidth: '1100px' }}>
         <div className="card bg-dark text-white shadow rounded-4 p-4">
+          {/* Back button above card content */}
+          <button
+            className="btn btn-outline-light mb-3"
+            style={{ width: "85px", display: "block", textAlign: "left" }}
+            onClick={() => navigate(-1)}
+          >
+            <i className="bi bi-arrow-left"></i> Back
+          </button>
+
           <div className="row mb-4">
             <div className="col-md-auto">
               <div style={{ width: '300px', height: '300px', maxWidth: '100%', position: 'relative' }}>
