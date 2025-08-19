@@ -46,8 +46,27 @@ export default function Search() {
   return (
     <div
       className="container-fluid text-white py-4"
-      style={{minHeight: '100vh', position: 'relative', overflow: 'visible' }}
+      style={{
+        minHeight: '100vh',
+        position: 'relative',
+        overflow: 'visible'
+      }}
     >
+      {/* Fixed Back Button */}
+      <button
+        className="btn btn-outline-light"
+        style={{
+          position: "fixed",
+          top: "20px",
+          left: "20px",
+          width: "85px",
+          textAlign: "left",
+          zIndex: 100,
+        }}
+        onClick={() => navigate(-1)}
+      >
+        <i className="bi bi-arrow-left"></i> Back
+      </button>
       {/* Background image */}
       <img
         src={backgroundImg}
