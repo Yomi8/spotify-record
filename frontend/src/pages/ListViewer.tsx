@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import backgroundImg from "../assets/images/background.jpg";
@@ -25,6 +25,7 @@ type Artist = {
 export default function ListViewer() {
   const { listType } = useParams();
   const { getAccessTokenSilently, isAuthenticated, isLoading: authLoading } = useAuth0();
+  const navigate = useNavigate();
 
   const [songs, setSongs] = useState<Song[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
@@ -272,6 +273,14 @@ export default function ListViewer() {
           padding: "2rem",
         }}
       >
+        {/* Back button above card content */}
+        <button
+          className="btn btn-outline-light mb-3"
+          style={{ width: "85px", display: "block", textAlign: "left" }}
+          onClick={() => navigate(-1)}
+        >
+          <i className="bi bi-arrow-left"></i> Back
+        </button>
         <div className="max-w-4xl px-4">
           <h1 className="text-2xl font-bold mb-6 text-center capitalize">{listLabel}</h1>
           <div className="p-4 border rounded-lg shadow">{renderContent()}</div>
