@@ -52,21 +52,6 @@ export default function Search() {
         overflow: 'visible'
       }}
     >
-      {/* Fixed Back Button */}
-      <button
-        className="btn btn-outline-light"
-        style={{
-          position: "fixed",
-          top: "20px",
-          left: "20px",
-          width: "85px",
-          textAlign: "left",
-          zIndex: 100,
-        }}
-        onClick={() => navigate(-1)}
-      >
-        <i className="bi bi-arrow-left"></i> Back
-      </button>
       {/* Background image */}
       <img
         src={backgroundImg}
@@ -104,6 +89,19 @@ export default function Search() {
 
             {/* Search form card */}
             <div className="card bg-dark text-white shadow p-4 mb-4">
+              {/* Back button inside the card, above content */}
+              <button
+                className="btn btn-outline-light mb-3"
+                style={{
+                  width: "75px",
+                  textAlign: "left",
+                  display: "block",
+                  marginLeft: 0,
+                }}
+                onClick={() => navigate(-1)}
+              >
+                <i className="bi bi-arrow-left"></i> Back
+              </button>
               <p className="text-center text-light-50 mb-4">Click on a result to view more details</p>
 
               <form onSubmit={handleSearch}>

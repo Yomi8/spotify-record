@@ -27,24 +27,8 @@ export default function Lists() {
         minHeight: "100vh",
         position: "relative",
         overflow: "visible",
-        paddingTop: "70px", // Add padding to fit the fixed back button
       }}
     >
-      {/* Fixed Back Button */}
-      <button
-        className="btn btn-outline-light"
-        style={{
-          position: "fixed",
-          top: "20px",
-          left: "20px",
-          width: "85px",
-          textAlign: "left",
-          zIndex: 100,
-        }}
-        onClick={() => navigate(-1)}
-      >
-        <i className="bi bi-arrow-left"></i> Back
-      </button>
       {/* Background */}
       <img
         src={backgroundImg}
@@ -82,6 +66,17 @@ export default function Lists() {
 
             {/* Main content card */}
             <div className="card bg-dark text-white shadow p-4">
+              {/* Back button inside the card */}
+              <button
+                className="btn btn-outline-light mb-3"
+                style={{
+                  width: "75px",
+                  textAlign: "left",
+                }}
+                onClick={() => navigate(-1)}
+              >
+                <i className="bi bi-arrow-left"></i> Back
+              </button>
               <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
                 {listOptions.map((list) => (
                   <div key={list.type} className="d-flex justify-content-center">
