@@ -94,10 +94,9 @@ export default function SongDetails() {
         }}
       >
         <div className="card bg-dark text-white shadow rounded-4 p-4" style={{ position: 'relative' }}>
-          {/* Back button in top left */}
+          {/* Back button above card content */}
           <button
-            className="btn btn-outline-light position-absolute top-0 start-0 m-3"
-            style={{ zIndex: 10 }}
+            className="btn btn-outline-light mb-3"
             onClick={() => navigate(-1)}
           >
             <i className="bi bi-arrow-left"></i> Back
