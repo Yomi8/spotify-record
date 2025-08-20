@@ -224,6 +224,7 @@ export default function ListViewer() {
           {hasSearched && songs.length === 0 && artists.length === 0 && !loading && (
             <div className="alert alert-warning mt-3">
               No results found for your search.
+              (Check your date range and try again.)
             </div>
           )}
         </div>
