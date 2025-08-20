@@ -84,7 +84,7 @@ export default function Acknowledgements() {
                     }}
                   />
                   <span>
-                    <strong>Button 1:</strong> Public Domain - <a href="https://commons.wikimedia.org/wiki/File:1500x1500-abstract-sd2003.jpg">Source</a>
+                    <strong>Button 1:</strong> Public Domain - <a href="https://commons.wikimedia.org/wiki/File:1500x1500-abstract-sd2003.jpg" target="_blank" rel="noopener noreferrer" className="text-info">Source</a>
                   </span>
                 </li>
                 <li className="list-group-item bg-dark text-white border-0 d-flex align-items-center">
@@ -100,7 +100,7 @@ export default function Acknowledgements() {
                     }}
                   />
                   <span>
-                    <strong>Button 2:</strong> Nick Collins - <a href="https://www.pexels.com/photo/blue-painting-1292998/">Source</a>
+                    <strong>Button 2:</strong> Nick Collins - <a href="https://www.pexels.com/photo/blue-painting-1292998/" target="_blank" rel="noopener noreferrer" className="text-info">Source</a>
                   </span>
                 </li>
                 <li className="list-group-item bg-dark text-white border-0 d-flex align-items-center">
@@ -132,7 +132,7 @@ export default function Acknowledgements() {
                     }}
                   />
                   <span>
-                    <strong>Button 4:</strong> Public Domain - <a href="https://rare-gallery.com/5323077-line-color-pink-purple-decorative-abstraction-pattern-background-colour-bright-drape-festival-fest-straight-colourful-public-domain-images.html">Source</a>
+                    <strong>Button 4:</strong> Public Domain - <a href="https://rare-gallery.com/5323077-line-color-pink-purple-decorative-abstraction-pattern-background-colour-bright-drape-festival-fest-straight-colourful-public-domain-images.html" target="_blank" rel="noopener noreferrer" className="text-info">Source</a>
                   </span>
                 </li>
                 <li className="list-group-item bg-dark text-white border-0 d-flex align-items-center">
@@ -148,7 +148,7 @@ export default function Acknowledgements() {
                     }}
                   />
                   <span>
-                    <strong>Button 5:</strong> Alen Hunjet - <a href="https://freerangestock.com/photos/143328/abstract-background--spiral-of-blue-lights.html">Source</a>
+                    <strong>Button 5:</strong> Alen Hunjet - <a href="https://freerangestock.com/photos/143328/abstract-background--spiral-of-blue-lights.html" target="_blank" rel="noopener noreferrer" className="text-info">Source</a>
                   </span>
                 </li>
                 <li className="list-group-item bg-dark text-white border-0 d-flex align-items-center">
@@ -164,7 +164,7 @@ export default function Acknowledgements() {
                     }}
                   />
                   <span>
-                    <strong>Button 6:</strong> FreePik - <a href="https://www.freepik.com/free-photo/blue-color-splash-dark-background-with-copy-space-text_3939420.htm#fromView=keyword&page=1&position=26&uuid=d94107b4-8b7e-4d60-befe-54404980a54b&query=Blue+Abstract+Chaos">Source</a>
+                    <strong>Button 6:</strong> FreePik - <a href="https://www.freepik.com/free-photo/blue-color-splash-dark-background-with-copy-space-text_3939420.htm#fromView=keyword&page=1&position=26&uuid=d94107b4-8b7e-4d60-befe-54404980a54b&query=Blue+Abstract+Chaos" target="_blank" rel="noopener noreferrer" className="text-info">Source</a>
                   </span>
                 </li>
                 <li className="list-group-item bg-dark text-white border-0 d-flex align-items-center">
@@ -180,7 +180,7 @@ export default function Acknowledgements() {
                     }}
                   />
                   <span>
-                    <strong>Background:</strong> Public Domain - <a href="https://www.rawpixel.com/image/5923497/photo-image-texture-cloud-aesthetic">Source</a>
+                    <strong>Background:</strong> Public Domain - <a href="https://www.rawpixel.com/image/5923497/photo-image-texture-cloud-aesthetic" target="_blank" rel="noopener noreferrer" className="text-info">Source</a>
                   </span>
                 </li>
               </ul>
