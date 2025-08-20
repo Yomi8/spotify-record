@@ -166,7 +166,7 @@ export default function Search() {
                       {artistResults.map(artist => (
                         <div
                           key={artist.artist_id}
-                          className="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex align-items-center"
+                          className="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex align-items-center result-item"
                           onClick={() => navigate(`/artist/${artist.artist_id}`)}
                           style={{ cursor: "pointer" }}
                         >
@@ -195,7 +195,7 @@ export default function Search() {
                       {songResults.map(song => (
                         <div
                           key={song.song_id}
-                          className="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex align-items-center"
+                          className="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex align-items-center result-item"
                           onClick={() => navigate(`/song/${song.song_id}`)}
                           style={{ cursor: "pointer" }}
                         >
@@ -221,6 +221,21 @@ export default function Search() {
           </div>
         </div>
       </div>
+      <style>
+        {`
+          .result-item {
+            transition: all 0.2s ease-in-out;
+          }
+          .result-item:hover {
+            background-color: #fff !important;
+            color: #000 !important;
+          }
+          .result-item:hover h6,
+          .result-item:hover small {
+            color: #000 !important;
+          }
+        `}
+      </style>
     </div>
   );
 }
