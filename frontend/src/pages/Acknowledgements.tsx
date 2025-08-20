@@ -180,7 +180,7 @@ export default function Acknowledgements() {
                     }}
                   />
                   <span>
-                    <strong>Background:</strong> Public Domain - <a herf="https://www.rawpixel.com/image/5923497/photo-image-texture-cloud-aesthetic">Source</a>
+                    <strong>Background:</strong> Public Domain - <a href="https://www.rawpixel.com/image/5923497/photo-image-texture-cloud-aesthetic">Source</a>
                   </span>
                 </li>
               </ul>
