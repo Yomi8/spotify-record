@@ -173,6 +173,7 @@ export default function ListViewer() {
   const renderContent = () => {
     if (loading) return <div>Loading...</div>;
     if (listType === "custom") {
+      const hasSearched = customStart || customEnd || customLimit !== 10; // crude check, adjust as needed
       return (
         <div>
           <h2>Custom List Builder</h2>
@@ -219,6 +220,12 @@ export default function ListViewer() {
           </button>
           {songs.length > 0 && renderSongsTable(songs)}
           {artists.length > 0 && renderArtistsTable(artists)}
+          {/* Fallback message if no results */}
+          {hasSearched && songs.length === 0 && artists.length === 0 && !loading && (
+            <div className="alert alert-warning mt-3">
+              No results found for your search.
+            </div>
+          )}
         </div>
       );
     }
