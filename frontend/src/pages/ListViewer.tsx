@@ -1,10 +1,9 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import backgroundImg from "../assets/images/background.jpg";
 import { useAuth0 } from "@auth0/auth0-react";
 import dayjs from "dayjs";
-import { Link } from "react-router-dom";
 
 type Song = {
   song_id: string;
@@ -60,7 +59,7 @@ export default function ListViewer() {
   }
 
   useEffect(() => {
-    if (!isAuthenticated || listType === "custom") return; // skip for custom
+    if (!isAuthenticated || listType === "custom") return;
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -131,12 +130,12 @@ export default function ListViewer() {
             <td>{idx + 1}</td>
             <td>
               <Link to={`/song/${song.song_id}`} className="table-link">
-                {song.track_name} <i className="bi bi-arrow-right-short"></i>
+                {song.track_name}
               </Link>
             </td>
             <td>
               <Link to={`/artist/${song.artist_id}`} className="table-link">
-                {song.artist_name} <i className="bi bi-arrow-right-short"></i>
+                {song.artist_name}
               </Link>
             </td>
             <td>{song.play_count}</td>
@@ -161,7 +160,7 @@ export default function ListViewer() {
             <td>{idx + 1}</td>
             <td>
               <Link to={`/artist/${artist.artist_id}`} className="table-link">
-                {artist.artist_name} <i className="bi bi-arrow-right-short"></i>
+                {artist.artist_name}
               </Link>
             </td>
             <td>{artist.play_count}</td>
@@ -177,7 +176,6 @@ export default function ListViewer() {
       return (
         <div>
           <h2>Custom List Builder</h2>
-          {/* Custom list form */}
           <div className="mb-3">
             <label className="form-label">List Type</label>
             <select
@@ -232,7 +230,6 @@ export default function ListViewer() {
   if (authLoading) return <div>Loading authentication...</div>;
   if (!isAuthenticated) return <div>Please log in to view lists.</div>;
 
-  {/* Main Content Render */}
   return (
     <div
       className="container-fluid text-white py-4"
@@ -262,7 +259,6 @@ export default function ListViewer() {
           padding: "2rem",
         }}
       >
-        {/* Back button above card content */}
         <button
           className="btn btn-outline-light mb-3"
           style={{ width: "85px", display: "block", textAlign: "left" }}
@@ -282,13 +278,26 @@ export default function ListViewer() {
           color: #fff;
           text-decoration: none;
           transition: color 0.2s, text-decoration 0.2s;
+          position: relative;
+          padding-right: 1.2rem; /* space for icon */
+        }
+        .table-link::after {
+          font-family: "bootstrap-icons";
+          content: "\\f135"; /* bi-arrow-right-short */
+          font-size: 1.2rem;
+          position: absolute;
+          right: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          transition: content 0.2s, color 0.2s;
         }
         .table-link:hover {
-          color: #0d6efd;
+          color: var(--bs-info);
           text-decoration: underline;
         }
-        .table-link i {
-          vertical-align: middle;
+        .table-link:hover::after {
+          content: "\\f138"; /* bi-arrow-right */
+          color: var(--bs-info);
         }
       `}</style>
     </div>
