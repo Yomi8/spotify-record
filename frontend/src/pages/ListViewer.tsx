@@ -62,7 +62,6 @@ export default function ListViewer() {
   useEffect(() => {
     if (!isAuthenticated || listType === "custom") return; // skip for custom
     const fetchData = async () => {
-      console.log("Fetching prebuilt list:", listType);
       setLoading(true);
       try {
         const token = await getAccessTokenSilently();
@@ -86,15 +85,10 @@ export default function ListViewer() {
   }, [listType, isAuthenticated]);
 
   const fetchCustomList = async () => {
-    console.log("Custom list button clicked");
-    if (!isAuthenticated) {
-      console.warn("Not authenticated, cannot fetch");
-      return;
-    }
+    if (!isAuthenticated) return;
     setLoading(true);
     try {
       const token = await getAccessTokenSilently();
-      console.log("Got token, fetching custom list:", customType, customStart, customEnd, customLimit);
       const endpoint = customType === "songs" ? "/api/lists/songs" : "/api/lists/artists";
       const res = await axios.get(endpoint, {
         params: {
@@ -136,13 +130,13 @@ export default function ListViewer() {
           <tr key={song.song_id}>
             <td>{idx + 1}</td>
             <td>
-              <Link to={`/song/${song.song_id}`} className="text-white text-decoration-none">
-                {song.track_name}
+              <Link to={`/song/${song.song_id}`} className="table-link">
+                {song.track_name} <i className="bi bi-arrow-right-short"></i>
               </Link>
             </td>
             <td>
-              <Link to={`/artist/${song.artist_id}`} className="text-white text-decoration-none">
-                {song.artist_name}
+              <Link to={`/artist/${song.artist_id}`} className="table-link">
+                {song.artist_name} <i className="bi bi-arrow-right-short"></i>
               </Link>
             </td>
             <td>{song.play_count}</td>
@@ -166,8 +160,8 @@ export default function ListViewer() {
           <tr key={artist.artist_name}>
             <td>{idx + 1}</td>
             <td>
-              <Link to={`/artist/${artist.artist_id}`} className="text-white text-decoration-none">
-                {artist.artist_name}
+              <Link to={`/artist/${artist.artist_id}`} className="table-link">
+                {artist.artist_name} <i className="bi bi-arrow-right-short"></i>
               </Link>
             </td>
             <td>{artist.play_count}</td>
@@ -183,7 +177,7 @@ export default function ListViewer() {
       return (
         <div>
           <h2>Custom List Builder</h2>
-
+          {/* Custom list form */}
           <div className="mb-3">
             <label className="form-label">List Type</label>
             <select
@@ -195,7 +189,6 @@ export default function ListViewer() {
               <option value="artists">Artists</option>
             </select>
           </div>
-
           <div className="mb-3">
             <label className="form-label">Start Date</label>
             <input
@@ -205,7 +198,6 @@ export default function ListViewer() {
               onChange={(e) => setCustomStart(e.target.value)}
             />
           </div>
-
           <div className="mb-3">
             <label className="form-label">End Date</label>
             <input
@@ -215,7 +207,6 @@ export default function ListViewer() {
               onChange={(e) => setCustomEnd(e.target.value)}
             />
           </div>
-
           <div className="mb-3">
             <label className="form-label">Limit</label>
             <input
@@ -225,17 +216,14 @@ export default function ListViewer() {
               onChange={(e) => setCustomLimit(Number(e.target.value))}
             />
           </div>
-
           <button className="btn btn-primary mb-4" onClick={fetchCustomList}>
             Generate List
           </button>
-
           {songs.length > 0 && renderSongsTable(songs)}
           {artists.length > 0 && renderArtistsTable(artists)}
         </div>
       );
     }
-
     if (isSongList) return renderSongsTable(songs);
     if (isArtistList) return renderArtistsTable(artists);
     return <h2>List not found</h2>;
@@ -244,6 +232,7 @@ export default function ListViewer() {
   if (authLoading) return <div>Loading authentication...</div>;
   if (!isAuthenticated) return <div>Please log in to view lists.</div>;
 
+  {/* Main Content Render */}
   return (
     <div
       className="container-fluid text-white py-4"
@@ -286,6 +275,22 @@ export default function ListViewer() {
           <div className="p-4 border rounded-lg shadow">{renderContent()}</div>
         </div>
       </div>
+
+      {/* Table link hover styles */}
+      <style>{`
+        .table-link {
+          color: #fff;
+          text-decoration: none;
+          transition: color 0.2s, text-decoration 0.2s;
+        }
+        .table-link:hover {
+          color: #0d6efd;
+          text-decoration: underline;
+        }
+        .table-link i {
+          vertical-align: middle;
+        }
+      `}</style>
     </div>
   );
 }
