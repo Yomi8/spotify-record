@@ -190,7 +190,7 @@ export default function ArtistDetails() {
                             <td>{idx + 1}</td>
                             <td>
                               <Link to={`/song/${song.song_id}`} className="table-link">
-                                {song.track_name}
+                                <span>{song.track_name}</span>
                               </Link>
                             </td>
                             <td>{song.play_count}</td>
@@ -223,7 +223,7 @@ export default function ArtistDetails() {
           transition: content 0.2s, color 0.2s, margin-left 0.2s;
         }
 
-        .table-link:hover {
+        .table-link:hover span {
           color: var(--bs-info);
           text-decoration: underline;
         }
