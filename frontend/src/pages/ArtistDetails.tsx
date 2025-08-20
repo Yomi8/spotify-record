@@ -1,8 +1,7 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import backgroundImg from '../assets/images/background.jpg';
 import { useAuth0 } from "@auth0/auth0-react";
-
 
 interface ArtistDetailsType {
   artist_id: number;
@@ -43,9 +42,7 @@ export default function ArtistDetails() {
         const token = await getAccessTokenSilently();
 
         const artistRes = await fetch(`/api/artist/${artistId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         const artistData = await artistRes.json();
         if ("error" in artistData) {
@@ -53,16 +50,12 @@ export default function ArtistDetails() {
           return;
         }
 
-        // Fetch ALL songs for this artist (remove limit or set to a very high number)
         const songsRes = await fetch(`/api/artist/${artistId}/songs?limit=10000`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         const songsData = await songsRes.json();
 
         let songList: ArtistSong[] = [];
-
         if (Array.isArray(songsData)) {
           songList = songsData;
         } else if (Array.isArray(songsData.songs)) {
@@ -71,10 +64,8 @@ export default function ArtistDetails() {
           setError("Unexpected format from songs API");
           return;
         }
-
         setSongs(songList);
 
-        // Determine earliest and latest play timestamps
         const timestamps = songList.flatMap((song) =>
           [song.first_played, song.last_played].filter(Boolean)
         );
@@ -82,7 +73,6 @@ export default function ArtistDetails() {
         const firstPlayed = dates.length > 0 ? new Date(Math.min(...dates.map(d => d.getTime()))) : null;
         const lastPlayed = dates.length > 0 ? new Date(Math.max(...dates.map(d => d.getTime()))) : null;
 
-        // Count unique song IDs
         const uniqueSongIds = new Set(songList.map(song => song.song_id));
         const songCount = uniqueSongIds.size;
 
@@ -109,7 +99,6 @@ export default function ArtistDetails() {
 
       <div className="container" style={{ position: 'relative', zIndex: 2, maxWidth: '1100px' }}>
         <div className="card bg-dark text-white shadow rounded-4 p-4">
-          {/* Back button above card content */}
           <button
             className="btn btn-outline-light mb-3"
             style={{ width: "85px", display: "block", textAlign: "left" }}
@@ -165,21 +154,13 @@ export default function ArtistDetails() {
                   <p>
                     <strong>First Played:</strong>{" "}
                     {artist.first_played
-                      ? new Date(artist.first_played).toLocaleDateString(undefined, {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })
+                      ? new Date(artist.first_played).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
                       : "No Date Found"}
                   </p>
                   <p>
                     <strong>Last Played:</strong>{" "}
                     {artist.last_played
-                      ? new Date(artist.last_played).toLocaleDateString(undefined, {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })
+                      ? new Date(artist.last_played).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
                       : "No Date Found"}
                   </p>
                 </div>
@@ -205,13 +186,13 @@ export default function ArtistDetails() {
                       </thead>
                       <tbody>
                         {songs.slice(0, 10).map((song, idx) => (
-                          <tr
-                            key={song.song_id}
-                            style={{ cursor: "pointer" }}
-                            onClick={() => navigate(`/song/${song.song_id}`)}
-                          >
+                          <tr key={song.song_id}>
                             <td>{idx + 1}</td>
-                            <td>{song.track_name}</td>
+                            <td>
+                              <Link to={`/song/${song.song_id}`} className="table-link">
+                                {song.track_name}
+                              </Link>
+                            </td>
                             <td>{song.play_count}</td>
                           </tr>
                         ))}
@@ -222,9 +203,37 @@ export default function ArtistDetails() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
+
+      {/* Styles for link + hover arrow */}
+      <style>{`
+        .table-link {
+          color: #fff;
+          text-decoration: none;
+          transition: color 0.2s, text-decoration 0.2s;
+          position: relative;
+        }
+
+        .table-link::after {
+          font-family: "bootstrap-icons";
+          content: "\\f135"; /* bi-arrow-right-short */
+          font-size: 1.1rem;
+          margin-left: 0.4rem;
+          transition: content 0.2s, color 0.2s, margin-left 0.2s;
+        }
+
+        .table-link:hover {
+          color: var(--bs-info);
+          text-decoration: underline;
+        }
+
+        .table-link:hover::after {
+          content: "\\f138"; /* bi-arrow-right */
+          color: var(--bs-info);
+          margin-left: 0.6rem;
+        }
+      `}</style>
     </div>
   );
 }
