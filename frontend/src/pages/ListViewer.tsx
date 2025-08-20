@@ -272,18 +272,18 @@ export default function ListViewer() {
         </div>
       </div>
 
-      {/* Table link hover styles */}
+      {/* Table link hover styling */}
       <style>{`
         .table-link {
           color: #fff;
           text-decoration: none;
           transition: color 0.2s, text-decoration 0.2s;
           position: relative;
-          padding-right: 1.2rem; /* space for icon */
+          padding-right: 1.2rem;
         }
         .table-link::after {
           font-family: "bootstrap-icons";
-          content: "\\f135"; /* bi-arrow-right-short */
+          content: "\\f135";
           font-size: 1.2rem;
           position: absolute;
           right: 0;
@@ -298,6 +298,7 @@ export default function ListViewer() {
         .table-link:hover::after {
           content: "\\f138"; /* bi-arrow-right */
           color: var(--bs-info);
+          margin-left: 0.6rem;
         }
       `}</style>
     </div>
