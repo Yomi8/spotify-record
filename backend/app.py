@@ -544,7 +544,6 @@ def search_songs_artists():
         SELECT
             s.song_id,
             s.track_name,
-            s.artist_id,
             a.artist_name,
             s.image_url
         FROM core_songs s
