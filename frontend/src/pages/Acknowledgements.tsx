@@ -116,7 +116,7 @@ export default function Acknowledgements() {
                     }}
                   />
                   <span>
-                    <strong>Button 3:</strong> pixel4k - <a href="https://www.pixel4k.com/lines-stripes-shroud-wavy-intermittent-glow-4k-51017.html">Source</a>
+                    <strong>Button 3:</strong> pixel4k - <a href="https://www.pixel4k.com/lines-stripes-shroud-wavy-intermittent-glow-4k-51017.html" target="_blank" rel="noopener noreferrer" className="text-info">Source</a>
                   </span>
                 </li>
                 <li className="list-group-item bg-dark text-white border-0 d-flex align-items-center">
