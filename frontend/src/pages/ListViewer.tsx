@@ -35,6 +35,7 @@ export default function ListViewer() {
   const [customEnd, setCustomEnd] = useState("");
   const [customLimit, setCustomLimit] = useState(10);
   const [customType, setCustomType] = useState<"songs" | "artists">("songs");
+  const [customSearched, setCustomSearched] = useState(false);
 
   const listOptions = [
     { label: "Top 100 Songs", type: "top-100-songs", isSongList: true, isArtistList: false, limit: 100 },
@@ -86,6 +87,7 @@ export default function ListViewer() {
   const fetchCustomList = async () => {
     if (!isAuthenticated) return;
     setLoading(true);
+    setCustomSearched(true);
     try {
       const token = await getAccessTokenSilently();
       const endpoint = customType === "songs" ? "/api/lists/songs" : "/api/lists/artists";
@@ -173,7 +175,6 @@ export default function ListViewer() {
   const renderContent = () => {
     if (loading) return <div>Loading...</div>;
     if (listType === "custom") {
-      const hasSearched = customStart || customEnd || customLimit !== 10; // crude check, adjust as needed
       return (
         <div>
           <h2>Custom List Builder</h2>
@@ -221,7 +222,7 @@ export default function ListViewer() {
           {songs.length > 0 && renderSongsTable(songs)}
           {artists.length > 0 && renderArtistsTable(artists)}
           {/* Fallback message if no results */}
-          {hasSearched && songs.length === 0 && artists.length === 0 && !loading && (
+          {customSearched && songs.length === 0 && artists.length === 0 && !loading && (
             <div className="alert alert-warning mt-3">
               No results found for your search.
               (Check your date range and try again.)
