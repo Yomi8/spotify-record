@@ -196,7 +196,6 @@ export default function Search() {
                         <div
                           key={song.song_id}
                           className="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex align-items-center"
-                          onClick={() => navigate(`/song/${song.song_id}`)}
                           style={{ cursor: "pointer" }}
                         >
                           <img
@@ -206,10 +205,11 @@ export default function Search() {
                             width={50}
                             height={50}
                             style={{ objectFit: "cover" }}
+                            onClick={() => navigate(`/song/${song.song_id}`)}
                           />
                           <div>
-                            <h6 className="mb-0">{song.track_name}</h6>
-                            <small className="text-light-50">{song.artist_name}</small>
+                            <h6 className="mb-0" onClick={() => navigate(`/song/${song.song_id}`)}>{song.track_name}</h6>
+                            <small className="text-light-50" onClick={() => navigate(`/artist/${song.artist_id}`)}>{song.artist_name}</small>
                           </div>
                         </div>
                       ))}
