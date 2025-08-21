@@ -305,7 +305,7 @@ export default function Acknowledgements() {
               </ul>
 
               {/* Section: Frontend Libraries */}
-              <h3 className="mt-4 mb-0">Other Libraries</h3>
+              <h3 className="mt-4 mb-0">Frontend Libraries</h3>
               <ul className="list-group list-group-flush">
                 <li className="list-group-item bg-dark text-white border-0">
                   <strong>React</strong> - For creating the frontend interface.
