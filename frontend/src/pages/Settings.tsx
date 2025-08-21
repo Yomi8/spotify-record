@@ -1,50 +1,9 @@
-import { useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import SpotifyUpload from "../components/JSONUpload";
 import backgroundImg from "../assets/images/background.jpg";
 
-interface SnapshotJob {
-  period: string;
-  job_id: string;
-}
-
 export default function Settings() {
-  const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0();
-  const [snapshotStatus, setSnapshotStatus] = useState<string | null>(null);
-
-  const handleGenerateSnapshots = async () => {
-    setSnapshotStatus("Starting snapshot generation...");
-    try {
-      const token = await getAccessTokenSilently();
-      const periodsToGenerate = ["day", "week", "year", "lifetime"];
-
-      const res = await fetch("/api/snapshots/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ periods: periodsToGenerate }),
-      });
-
-      if (!res.ok) throw new Error("Failed to start snapshot generation");
-
-      const data = await res.json();
-
-      if (data.jobs && data.jobs.length > 0) {
-        const jobsInfo = data.jobs
-          .map((job: SnapshotJob) => `Period: ${job.period}, Task ID: ${job.job_id}`)
-          .join("\n");
-        setSnapshotStatus(`Snapshot generation started for:\n${jobsInfo}`);
-      } else {
-        setSnapshotStatus("Snapshot generation started.");
-      }
-    } catch (err) {
-      console.error(err);
-      setSnapshotStatus("Error starting snapshot generation. Please try again.");
-    }
-  };
-
+  const { isAuthenticated, loginWithRedirect } = useAuth0();
   if (!isAuthenticated) {
     return (
       <div
@@ -128,24 +87,6 @@ export default function Settings() {
                 <i className="bi bi-upload me-2"></i> Upload Spotify Data
               </h2>
               <SpotifyUpload />
-            </div>
-
-            {/* Snapshots Card */}
-            <div className="card bg-dark text-white shadow p-4">
-              <h2 className="mb-3">
-                <i className="bi bi-bar-chart me-2"></i> Generate Snapshots
-              </h2>
-              <button
-                onClick={handleGenerateSnapshots}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                Generate Snapshots Now
-              </button>
-              {snapshotStatus && (
-                <p className="mt-3 text-gray-300 whitespace-pre-line">
-                  {snapshotStatus}
-                </p>
-              )}
             </div>
           </div>
         </div>
