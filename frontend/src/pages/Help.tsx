@@ -170,7 +170,7 @@ export default function Help() {
                 style={{ cursor: "pointer" }}
               >
                 <span className="h4 text-white m-0">
-                  <i className="bi bi-gear-wide-connected me-2" /> Template for another FAQ
+                  <i className="bi bi-gear-wide-connected me-2" /> Why is my data not up to date?
                 </span>
                 <i className={`bi ms-3 text-white ${openTemplate ? "bi-chevron-up" : "bi-chevron-down"}`} />
               </button>
@@ -178,7 +178,7 @@ export default function Help() {
               {openTemplate && (
                 <div id="files-faq-body" className="px-4 pb-4">
                   <p className="mt-3 mb-0 text-gray-300">
-                    Example of some text
+                    Spotify only provides full data for your streaming history when you request it through their privacy settings. If you haven't requested your data recently, it may not include your latest listening activity. To ensure you have the most up-to-date data, follow the steps in the guide above to request and upload your Spotify data.
                   </p>
                 </div>
               )}
