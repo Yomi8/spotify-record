@@ -34,7 +34,7 @@ export default function Help() {
           >
             https://www.spotify.com/account/privacy/
           </a>
-          . Scroll down until you see the “Download your data” section.
+          . Scroll down until you see the “Download your data” section. Uncheck the box for "Account data" if it's checked, then chcek the "Extended streaming history" box, then click the "Request data" button. This ensures you get the full data for each stream.
         </>
       ),
       img: step1Img,
@@ -42,7 +42,7 @@ export default function Help() {
     {
       title: "Step 2 — Request Extended Streaming History",
       text:
-        "Under “Extended streaming history”, click “Request data” and confirm in the email Spotify sends you. This ensures you get your full listening history, not just the last few months. Spotify will email you again when your file is ready (this can take a few days).",
+        "Check your inbox and confirm in the email Spotify sends you. Spotify will email you again when your file is ready (this can take a few days).",
       img: step2Img,
     },
     {
