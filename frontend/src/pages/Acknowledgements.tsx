@@ -69,7 +69,7 @@ export default function Acknowledgements() {
               </button>
 
               {/* Section: Images */}
-              <h3 className="mt-3 mb-2">Image Credits</h3>
+              <h3 className="mt-3 mb-0">Image Credits</h3>
               <ul className="list-group list-group-flush mb-4">
                 <li className="list-group-item bg-dark text-white border-0 d-flex align-items-center">
                   <img
@@ -186,7 +186,7 @@ export default function Acknowledgements() {
               </ul>
 
               {/* Section: APIs */}
-              <h3 className="mt-4 mb-2">APIs</h3>
+              <h3 className="mt-4 mb-0">APIs</h3>
               <ul className="list-group list-group-flush mb-4">
                 <li className="list-group-item bg-dark text-white border-0">
                   <strong>Spotify Web API</strong> - For fetching track, artist, and
@@ -216,7 +216,7 @@ export default function Acknowledgements() {
               </ul>
 
               {/* Section: Backend Libraries */}
-              <h3 className="mt-4 mb-2">Backend Libraries</h3>
+              <h3 className="mt-4 mb-0">Backend Libraries</h3>
               <ul className="list-group list-group-flush mb-4">
                 <li className="list-group-item bg-dark text-white border-0">
                   <strong>Flask</strong> - Web framework for building the API.
@@ -305,7 +305,7 @@ export default function Acknowledgements() {
               </ul>
 
               {/* Section: Frontend Libraries */}
-              <h3 className="mt-4 mb-2">Other Libraries</h3>
+              <h3 className="mt-4 mb-0">Other Libraries</h3>
               <ul className="list-group list-group-flush">
                 <li className="list-group-item bg-dark text-white border-0">
                   <strong>React</strong> - For creating the frontend interface.
