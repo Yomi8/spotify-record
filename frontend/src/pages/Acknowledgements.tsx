@@ -186,10 +186,10 @@ export default function Acknowledgements() {
               </ul>
 
               {/* Section: APIs */}
-              <h3 className="mt-4 mb-2">APIs Used</h3>
+              <h3 className="mt-4 mb-2">APIs</h3>
               <ul className="list-group list-group-flush mb-4">
                 <li className="list-group-item bg-dark text-white border-0">
-                  <strong>Spotify Web API:</strong> For fetching track, artist, and
+                  <strong>Spotify Web API</strong> - For fetching track, artist, and
                   album data.
                   <br />
                   <a
@@ -201,19 +201,172 @@ export default function Acknowledgements() {
                     https://developer.spotify.com/documentation/web-api/
                   </a>
                 </li>
-                {/* Add more APIs here if needed */}
+                <li className="list-group-item bg-dark text-white border-0">
+                  <strong>Auth0</strong> - For user authentication and authorization.
+                  <br />
+                  <a
+                    href="https://auth0.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://auth0.com/
+                  </a>
+                </li>
               </ul>
 
-              {/* Section: Other Libraries */}
+              {/* Section: Backend Libraries */}
+              <h3 className="mt-4 mb-2">Backend Libraries</h3>
+              <ul className="list-group list-group-flush mb-4">
+                <li className="list-group-item bg-dark text-white border-0">
+                  <strong>Flask</strong> - Web framework for building the API.
+                  <br />
+                  <a
+                    href="https://flask.palletsprojects.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://flask.palletsprojects.com/
+                  </a>
+                </li>
+                <li className="list-group-item bg-dark text-white border-0">
+                  <strong>Flask-CORS</strong> - For handling CORS in the API
+                  <br />
+                  <a
+                    href="https://flask-cors.readthedocs.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://flask-cors.readthedocs.io/
+                  </a>
+                </li>
+                <li className="list-group-item bg-dark text-white border-0">
+                  <strong>Flask-JWT-Extended</strong> - For JWT authentication.
+                  <br />
+                  <a
+                    href="https://flask-jwt-extended.readthedocs.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://flask-jwt-extended.readthedocs.io/
+                  </a>
+                </li>
+                <li className="list-group-item bg-dark text-white border-0">
+                  <strong>Pendulum</strong> - For date and time manipulation.
+                  <br />
+                  <a
+                    href="https://pendulum.eustace.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://pendulum.eustace.io/
+                  </a>
+                </li>
+                <li className="list-group-item bg-dark text-white border-0">
+                  <strong>python-dotenv</strong> - For loading environment variables.
+                  <br />
+                  <a
+                    href="https://pypi.org/project/python-dotenv/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://pypi.org/project/python-dotenv/
+                  </a>
+                </li>
+                <li className="list-group-item bg-dark text-white border-0">
+                  <strong>RQ</strong> - For background job processing.
+                  <br />
+                  <a
+                    href="https://python-rq.org/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://python-rq.org/
+                  </a>
+                </li>
+                <li className="list-group-item bg-dark text-white border-0">
+                  <strong>Spotipy</strong> - For interacting with the Spotify API.
+                  <br />
+                  <a
+                    href="https://spotipy.readthedocs.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://spotipy.readthedocs.io/
+                  </a>
+                </li>
+              </ul>
+
+              {/* Section: Frontend Libraries */}
               <h3 className="mt-4 mb-2">Other Libraries</h3>
               <ul className="list-group list-group-flush">
                 <li className="list-group-item bg-dark text-white border-0">
-                  <strong>React</strong> &amp; <strong>React Router</strong>
+                  <strong>React</strong> - For creating the frontend interface.
+                  <br />
+                  <a
+                    href="https://reactjs.org/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://reactjs.org/
+                  </a>
                 </li>
                 <li className="list-group-item bg-dark text-white border-0">
-                  <strong>Bootstrap</strong> for UI styling
+                  <strong>React Router</strong> - For routing in the frontend.
+                  <br />
+                  <a
+                    href="https://reactrouter.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://reactrouter.com/
+                  </a>
                 </li>
-                {/* Add more libraries if needed */}
+                <li className="list-group-item bg-dark text-white border-0">
+                  <strong>Bootstrap</strong> - For CSS styling.
+                  <br />
+                  <a
+                    href="https://getbootstrap.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://getbootstrap.com/
+                  </a>
+                </li>
+                <li className="list-group-item bg-dark text-white border-0">
+                  <strong>Axios</strong> - For HTTP requests.
+                  <br />
+                  <a
+                    href="https://axios-http.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://axios-http.com/
+                  </a>
+                </li>
+                <li className="list-group-item bg-dark text-white border-0">
+                  <strong>Day.js</strong> - For date manipulation.
+                  <br />
+                  <a
+                    href="https://day.js.org/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-info"
+                  >
+                    https://day.js.org/
+                  </a>
+                </li>
               </ul>
             </div>
           </div>

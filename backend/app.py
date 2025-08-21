@@ -13,14 +13,11 @@ from tasks import process_spotify_json_file, generate_snapshot_for_period, gener
 from db import run_query, get_user_id_from_auth0
 
 # --- Utility Imports ---
-import sys
 import os
 import json
 import uuid
 import pendulum
-import requests
 from base64 import b64encode
-import urllib.parse
 import logging
 
 # --- Spotify API Imports ---
